@@ -120,7 +120,7 @@ for m in rental_market:
     for d in calendar_dates: 
         _tmp = tmp[tmp["calendarDate"] == d]
         print(_tmp)
-        _tmp = _tmp[["price","review_count","Adjusted","bedrooms","rating_value","minNights","dist","pool","jacuzzi","landscape_views","available","id","calendarDate"]]
+        _tmp = _tmp[["price","review_count","Adjusted","bedrooms","rating_value","minNights","dist","pool","jacuzzi","landscape_views","available","id","calendarDate","listing_hashId"]]
         _tmp["mc"] = _tmp["calendarDate"].apply(get_mc_factor)
         _tmp = _tmp.reset_index(drop=True)
         market_data.append(_tmp)

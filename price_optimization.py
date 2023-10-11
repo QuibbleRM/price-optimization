@@ -167,8 +167,8 @@ push_report(optimized_pricing)
 
 
 
-client_property_data = _client_property_data[["listing_id","user_id","_id"]]
-client_property_data["listing_id"] = _client_property_data.listing_id.astype(str)
+client_property_data = client_property_data[["listing_id","user_id","_id"]]
+client_property_data["listing_id"] = client_property_data.listing_id.astype(str)
 client_property_data.columns = ["id","user_id","hashId"]
 optimized_pricing["id"] = optimized_pricing.id.astype(str)
 optimized_pricing["ClientId"] = optimized_pricing.id.astype(str)

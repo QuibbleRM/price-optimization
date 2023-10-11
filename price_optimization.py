@@ -83,6 +83,7 @@ client_listing = pd.DataFrame(get_listing_info(_ids))
 competitor_listing = pd.DataFrame(get_listing_info(_compList))
 market_listing = pd.concat([client_listing,competitor_listing],axis = 0)
 market_listing["bedrooms"] = pd.to_numeric(market_listing["bedrooms"], errors="coerce").fillna(0).astype(int)
+market_listing.rename(columns={'_id': 'listing_hashId'}, inplace=True)
 market_listing = parse_scrap_info(market_listing)
 market_listing = pd.merge(market_listing,image_scores, on = "id", how = "outer")
 market_listing["Reference"].fillna(market_listing["Reference"].mean(),inplace = True)
@@ -170,6 +171,7 @@ client_property_data = pd.DataFrame(client_property_data)
 client_property_data = client_property_data[["listing_id","user_id","_id"]]
 client_property_data["listing_id"] = client_property_data.listing_id.astype(str)
 client_property_data.columns = ["id","user_id","hashId"]
+
 optimized_pricing["id"] = optimized_pricing.id.astype(str)
 optimized_pricing["ClientId"] = optimized_pricing.id.astype(str)
 optimized_pricing = pd.merge(optimized_pricing,client_property_data,how = "left",on="id")

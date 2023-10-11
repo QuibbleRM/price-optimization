@@ -166,7 +166,7 @@ push_report(optimized_pricing)
 
 
 
-
+client_property_data = pd.DataFrame(client_property_data)
 client_property_data = client_property_data[["listing_id","user_id","_id"]]
 client_property_data["listing_id"] = client_property_data.listing_id.astype(str)
 client_property_data.columns = ["id","user_id","hashId"]

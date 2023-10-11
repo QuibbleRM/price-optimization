@@ -82,13 +82,8 @@ _comp = [rental._competitors for rental in rental_market]
 client_listing = pd.DataFrame(get_listing_info(_ids))
 competitor_listing = pd.DataFrame(get_listing_info(_compList))
 market_listing = pd.concat([client_listing,competitor_listing],axis = 0)
-#market_listing["bedrooms"] = market_listing["bedrooms"].apply(lambda x: 0 if isinstance(x, str) else x)
 market_listing["bedrooms"] = pd.to_numeric(market_listing["bedrooms"], errors="coerce").fillna(0).astype(int)
-
-
 market_listing = parse_scrap_info(market_listing)
-
-
 market_listing = pd.merge(market_listing,image_scores, on = "id", how = "outer")
 market_listing["Reference"].fillna(market_listing["Reference"].mean(),inplace = True)
 market_listing["Adjusted"].fillna(market_listing["Adjusted"].mean(),inplace = True)
@@ -100,61 +95,7 @@ market_listing= pd.merge(market_listing,market_availabilities,on="id", how = 'ou
 market_listing['dist'] = 0
 
 
-def get_latest_available(listing_ids: list[str], calendar_date: list[str]):
-    
-    date_yesterday = (datetime.now() - timedelta(days=1))
-
-    start_of_day = date_yesterday.replace(hour=0, minute=0, second=0)
-    end_of_day = date_yesterday.replace(hour=23, minute=59, second=59)
-
-    availability_collection  = merlin_hunter["scrapy_quibble"]["scrapy_availability"]
-    
-    availability_match = {
-            "listing_id": {"$in": listing_ids},
-            "calendarDate": {"$in": calendar_date},
-            "minNights": {"$lt": 30},
-            "price": {"$exists": True} if listing_ids else 0
-            #"price": {"$exists": True} if listing_ids else None
-        }
-
-    availability_query = [
-                {
-                    "$match": availability_match
-                },
-        
-                {
-                    "$project": {
-                        "_id": 0,
-                        "id": "$listing_id",
-                        "calendarDate": "$calendarDate",
-                        "scraped_date": "$scraped_date",
-                        "available": "$available",
-                        "minNights": "$minNights",
-                        "price": "$price"
-                    }
-                }
-
-            ]
-
-    availabilities: Iterable[dict] = availability_collection.aggregate(availability_query)
-
-
-    available_list = []
-    
-    for _avail in availabilities:
-
-        if not _avail.get('id'):
-            continue
-
-        available_list.append(_avail)
-        
-    return available_list
-
-
-
 mc_factor = pd.read_csv("bookable_search.csv")
-
-
 def get_mc_factor(calendar_date: str):
     
     
@@ -178,10 +119,6 @@ for m in rental_market:
     for d in calendar_dates: 
         _tmp = tmp[tmp["calendarDate"] == d]
         print(_tmp)
-        #_tmp = _tmp.sort_values(by = 'ToOptimize', ascending = False)
-        #_tmp = _tmp[_tmp.available == True]
-        #_tmp = _tmp.query('available == True or ToOptimize == 1')
-        #_tmp = _tmp[["price","review_count","Adjusted","bedrooms","rating_value","minNights","dist","pool","jacuzzi","landscape_views","available","ToOptimize","id","calendarDate"]]
         _tmp = _tmp[["price","review_count","Adjusted","bedrooms","rating_value","minNights","dist","pool","jacuzzi","landscape_views","available","id","calendarDate"]]
         _tmp["mc"] = _tmp["calendarDate"].apply(get_mc_factor)
         _tmp = _tmp.reset_index(drop=True)
@@ -194,8 +131,6 @@ def optimize_price(dat, choice = 1):
     m['price'] = m['price'].str.replace(',', '')
     print(m.iloc[:,:10])
     mat =  m.iloc[:,:10].values.astype(float)
-    #dynasaur = PriceModel(market_matrix = mat, coeff = [-0.0062, 0.0003, 0.0879, 0.1106, 0.3239, 0.015, 0.0002, 0.011, 0.42, 0.141], mc = choice)
-
     dynasaur = PriceModel(market_matrix = mat, coeff = [-0.0062, 0.0003, 0.5, 0.1106, 0.3239, 0.015, 0.0002, 0.011, 0.42, 0.141], mc = choice)
     res = dynasaur.optimize()
     m["Optimized_Price"] = 0
@@ -206,6 +141,9 @@ def optimize_price(dat, choice = 1):
 
 
 optimized_data = []
+report_date = (datetime.now() - timedelta(days=1))
+report_date = report_date.strftime("%Y-%m-%d")
+            
 RMid = 1
 for rm in rental_market:
     for m in market_data:
@@ -217,6 +155,7 @@ for rm in rental_market:
         if to_optimize and num_comp > 1:
             i = m["mc"][0]
             optim = optimize_price(m,i)
+            optim["report_date"] = report_date
             optim["ClientId"] = optim.at[0,"id"]
             optim["RMid"] = RMid
             RMid+=1
@@ -224,8 +163,4 @@ for rm in rental_market:
 
 
 summary = pd.concat(optimized_data,axis=0, ignore_index=True)
-
-
-
-#summary.to_csv("Price_Report.csv")
 push_report(summary)

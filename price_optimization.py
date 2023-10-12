@@ -8,17 +8,17 @@ from src.utils import *
 import numpy as np
 import pandas as pd
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 
 prop_ids = pd.read_json("prop.json", dtype = str)
 prop_ids = prop_ids[prop_ids.airBnbId != "nan"]
 client_property_ids = list(prop_ids.airBnbId.astype(str))
-offset = 365
+offset = 10
 
 
-from datetime import datetime, timedelta
+
 calendar_dates = []
 
 today = datetime.today() 

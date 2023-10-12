@@ -441,7 +441,7 @@ def format_data(input_data):
                     d: op_price
                     for d, op_price in zip(
                         extracted_data['calendarDate'],
-                        round(extracted_data['Optimized_Price'],2)
+                        extracted_data['Optimized_Price']
                     )
                 },
                 'price': {

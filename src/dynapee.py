@@ -48,11 +48,11 @@ class PriceModel(IPriceModel):
         #revenue = house_attributes[index_to_optimize][0] * overall_share
         #with multiple choice
         # mc for multiple choice
-        print(self._mc)
+        #print(self._mc)
         
         revenue = house_attributes[index_to_optimize][0] * (1-((1-overall_share)**self._mc))
         #revenue = np.round(revenue,2)
-
+        print(f"NP Rounded Revenue: {np.round(revenue,2)}, Rounded: {round(revenue,2)}, Original: {revenue}") 
         return -revenue  
 
 

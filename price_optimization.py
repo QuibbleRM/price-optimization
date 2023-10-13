@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 prop_ids = pd.read_json("prop.json", dtype = str)
 prop_ids = prop_ids[prop_ids.airBnbId != "nan"]
 client_property_ids = list(prop_ids.airBnbId.astype(str))
-offset = 10
+offset = 30
 
 
 
@@ -119,7 +119,6 @@ for m in rental_market:
     tmp = market_listing[market_listing.id.isin(tmp_ids)]
     for d in calendar_dates: 
         _tmp = tmp[tmp["calendarDate"] == d]
-        print(_tmp)
         _tmp = _tmp[["price","review_count","Adjusted","bedrooms","rating_value","minNights","dist","pool","jacuzzi","landscape_views","available","id","calendarDate","listing_hashId"]]
         _tmp["mc"] = _tmp["calendarDate"].apply(get_mc_factor)
         _tmp = _tmp.reset_index(drop=True)
@@ -130,9 +129,8 @@ def optimize_price(dat, choice = 1):
     m = dat.copy()
     m['price'] = m['price'].str.replace('$', '')
     m['price'] = m['price'].str.replace(',', '')
-    print(m.iloc[:,:10])
     mat =  m.iloc[:,:10].values.astype(float)
-    dynasaur = PriceModel(market_matrix = mat, coeff = [-0.0062, 0.0003, 0.5, 0.1106, 0.3239, 0.015, 0.0002, 0.011, 0.42, 0.141], mc = choice)
+    dynasaur = PriceModel(market_matrix = mat, coeff = [-0.0062, 0.0003, 0.0879, 0.1106, 0.3239, 0.015, 0.0002, 0.011, 0.42, 0.141], mc = choice)
     res = dynasaur.optimize()
     m["Optimized_Price"] = 0
     i = 0  

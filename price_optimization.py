@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 prop_ids = pd.read_json("prop.json", dtype = str)
 prop_ids = prop_ids[prop_ids.airBnbId != "nan"]
 client_property_ids = list(prop_ids.airBnbId.astype(str))
-offset = 10
+offset = 5
 
 
 
@@ -156,8 +156,6 @@ for rm in rental_market:
             client_placeholder = m.at[0,"id"]
             date_placeholder = m.at[0,"calendarDate"]
             optim = optimize_price(m,i)
-            optim_placeholder = m.at[0,"Optimized_Price"]
-            print(f"The property being optimized is: {client_placeholder} on {date_placeholder}, optimized price: {optim_placeholder}")
             optim["report_date"] = report_date
             optim["ClientId"] = optim.at[0,"id"]
             optim["RMid"] = RMid
@@ -176,8 +174,8 @@ client_property_data.columns = ["id","user_id","hashId"]
 
 optimized_pricing["id"] = optimized_pricing.id.astype(str)
 optimized_pricing["ClientId"] = optimized_pricing.id.astype(str)
-optimized_pricing = pd.merge(optimized_pricing,client_property_data,how = "left",on="id")
 optimized_pricing = optimized_pricing.query('id == ClientId')
+optimized_pricing = pd.merge(optimized_pricing,client_property_data,how = "left",on="id")
 result = optimized_pricing.groupby(['hashId', 'user_id', 'listing_hashId'])[["calendarDate","Optimized_Price","price"]].agg(list).reset_index()
 result_list = result.to_dict(orient='records')
 formatted_data_list = [format_data(item) for item in result_list]

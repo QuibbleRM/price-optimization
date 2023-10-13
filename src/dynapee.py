@@ -53,7 +53,7 @@ class PriceModel(IPriceModel):
         
         revenue = house_attributes[index_to_optimize][0] * (1-((1-overall_share)**self._mc))
         revenue = np.round(revenue,2)
-        print(f"Reference: {original_price},Optimized: {revenue}") 
+        #print(f"Reference: {original_price},Optimized: {revenue}") 
         return -revenue  
 
 

@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 prop_ids = pd.read_json("prop.json", dtype = str)
 prop_ids = prop_ids[prop_ids.airBnbId != "nan"]
 client_property_ids = list(prop_ids.airBnbId.astype(str))
-offset = 30
+offset = 10
 
 
 
@@ -155,8 +155,9 @@ for rm in rental_market:
             i = m["mc"][0]
             client_placeholder = m.at[0,"id"]
             date_placeholder = m.at[0,"calendarDate"]
-            print(f"The property being optimized is: {client_placeholder} on {date_placeholder}")
             optim = optimize_price(m,i)
+            optim_placeholder = m.at[0,"Optimized_Price"]
+            print(f"The property being optimized is: {client_placeholder} on {date_placeholder}, optimized price: {optim_placeholder}")
             optim["report_date"] = report_date
             optim["ClientId"] = optim.at[0,"id"]
             optim["RMid"] = RMid

@@ -438,7 +438,7 @@ def format_data(input_data):
         'calendar': {
             today.strftime("%Y-%m-%d"): {
                 'optimized_price': {
-                    d: op_price
+                    d: round(op_price,2)
                     for d, op_price in zip(
                         extracted_data['calendarDate'],
                         extracted_data['Optimized_Price']

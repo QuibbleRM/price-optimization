@@ -153,6 +153,9 @@ for rm in rental_market:
         num_comp = m.shape[0]
         if to_optimize and num_comp > 1:
             i = m["mc"][0]
+            client_placeholder = m.at[0,"id"]
+            date_placeholder = m.at[0,"calendarDate"]
+            print(f"The property being optimized is: {client_placeholder} on {date_placeholder}")
             optim = optimize_price(m,i)
             optim["report_date"] = report_date
             optim["ClientId"] = optim.at[0,"id"]

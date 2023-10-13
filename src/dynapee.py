@@ -35,6 +35,7 @@ class PriceModel(IPriceModel):
     def compute_revenue(self,init_price = 0, index_to_optimize = 0):
         
         house_attributes = self._market_matrix
+        original_price = house_attributes[index_to_optimize][0]
         house_attributes[index_to_optimize][0] = init_price    
         attr_coeff = self._coeff
         
@@ -51,8 +52,8 @@ class PriceModel(IPriceModel):
         #print(self._mc)
         
         revenue = house_attributes[index_to_optimize][0] * (1-((1-overall_share)**self._mc))
-        #revenue = np.round(revenue,2)
-        print(f"NP Rounded Revenue: {np.round(revenue,2)}, Rounded: {round(revenue,2)}, Original: {revenue}") 
+        revenue = np.round(revenue,2)
+        print(f"Reference: {original_price},Optimized: {revenue}") 
         return -revenue  
 
 

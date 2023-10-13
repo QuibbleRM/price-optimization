@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 prop_ids = pd.read_json("prop.json", dtype = str)
 prop_ids = prop_ids[prop_ids.airBnbId != "nan"]
 client_property_ids = list(prop_ids.airBnbId.astype(str))
-offset = 5
+offset = 10
 
 
 
@@ -174,7 +174,7 @@ client_property_data.columns = ["id","user_id","hashId"]
 
 optimized_pricing["id"] = optimized_pricing.id.astype(str)
 optimized_pricing["ClientId"] = optimized_pricing.id.astype(str)
-optimized_pricing = optimized_pricing.query('id == ClientId')
+optimized_pricing = optimized_pricing.query('id == ClientId and Optimized_Price > 0')
 optimized_pricing = pd.merge(optimized_pricing,client_property_data,how = "left",on="id")
 result = optimized_pricing.groupby(['hashId', 'user_id', 'listing_hashId'])[["calendarDate","Optimized_Price","price"]].agg(list).reset_index()
 result_list = result.to_dict(orient='records')

@@ -125,12 +125,6 @@ def get_listing_info(listing_ids: list[str]):
 
 def get_availability_info(listing_ids: list[str], calendar_date: list[str]):
     
-    """"
-    start_date = datetime.strptime("2023-09-17", "%Y-%m-%d") 
-    start_of_day = start_date.replace(hour=0, minute=0, second=0)
-    end_of_day = start_date.replace(hour=23, minute=59, second=59)
-    """
-    
     date_yesterday = (datetime.now() - timedelta(days=1))
    
     start_of_day = date_yesterday.replace(hour=0, minute=0, second=0)
@@ -141,13 +135,11 @@ def get_availability_info(listing_ids: list[str], calendar_date: list[str]):
             "listing_id": {"$in": listing_ids},
             "calendarDate": {"$in": calendar_date},
             "minNights": {"$lt": 30},
-            "available": True,
             "scraped_date": {
                     "$gte": start_of_day,
                     "$lt": end_of_day
-                },
-            "price": {"$exists": True} if listing_ids else 0
-            #"price": {"$exists": True} if listing_ids else None
+                }
+
         }
 
   
@@ -163,53 +155,13 @@ def get_availability_info(listing_ids: list[str], calendar_date: list[str]):
                         "scraped_date": "$scraped_date",
                         "available": "$available",
                         "minNights": "$minNights",
-                        "price": "$price"
+                        "price": { "$ifNull" : [ "$price", 0 ] }
                     }
                 }
 
             ]
     
-    """
-    availability_query = [
-                {
-                    "$match": availability_match
-                },
-                {
-                    "$addFields": {
-                        "price": {
-                            "$cond": {
-                                "if": {"$eq": ["$price", False]},
-                                "then": 0,
-                                "else": "$price"
-                            }
-                        }
-                    }
-                },
-                
-                {
-                    "$group": {
-                        "_id": "$listing_id",
-                        "latest_scraped_date": {"$max": "$scraped_date"},
-                        "data": {"$first": "$$ROOT"}
-                    }
-                },
-
-                {
-                    "$project": {
-                        "_id": 0,
-                        "id": "$_id",
-                        "calendarDate": "$data.calendarDate",
-                        "scraped_date": "$latest_scraped_date",
-                        "available": "$data.available",
-                        "minNights": "$data.minNights",
-                        "price": "$data.price"
-                    }
-                }
-
-            ]
-    """
     availabilities: Iterable[dict] = availability_collection.aggregate(availability_query)
-
 
     available_list = []
     

@@ -149,6 +149,7 @@ for rm in rental_market:
         m = m.drop_duplicates(subset = ['id'])
         m["ToOptimize"] = m['id'].apply(lambda x: 1 if str(x) == str(rm._id) else 0)
         m = m.sort_values(by = 'ToOptimize', ascending = False)
+        m = m.query('available == True or ToOptimize == 1')
         to_optimize = (m['ToOptimize'] == 1).any()
         num_comp = m.shape[0]
         if to_optimize and num_comp > 1:

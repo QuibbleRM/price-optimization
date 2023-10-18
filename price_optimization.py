@@ -127,6 +127,7 @@ for m in rental_market:
 
 def optimize_price(dat, choice = 1):
     m = dat.copy()
+    m['price'] = m.price.astype(str)
     m['price'] = m['price'].str.replace('$', '')
     m['price'] = m['price'].str.replace(',', '')
     mat =  m.iloc[:,:10].values.astype(float)

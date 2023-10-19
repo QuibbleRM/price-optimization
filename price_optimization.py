@@ -156,8 +156,6 @@ for rm in rental_market:
         if to_optimize and num_comp > 1:
             #i = m["mc"][0]
             i = float(m.iloc[0]["mc"])
-            client_placeholder = m.at[0,"id"]
-            date_placeholder = m.at[0,"calendarDate"]
             optim = optimize_price(m,i)
             optim["report_date"] = report_date
             optim["ClientId"] = optim.at[0,"id"]

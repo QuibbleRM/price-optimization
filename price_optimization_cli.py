@@ -18,7 +18,6 @@ client_property_ids = [arguments[0]]
 calendar_dates = [arguments[1]]
 
 
-print(f"User is requesting for listing {client_property_ids} on date: {calendar_dates}")
 
 client_property_data = get_property_info(client_property_ids)
 

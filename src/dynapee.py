@@ -15,6 +15,10 @@ class IPriceModel(abc.ABC):
     def optimize():
         pass
 
+    @abc.abstractclassmethod
+    def compute_share():
+        pass
+
     
 class PriceModel(IPriceModel):
 
@@ -64,7 +68,18 @@ class PriceModel(IPriceModel):
         return (-result.fun,result.x)
 
 
+    def compute_share(self,index_to_optimize = 0):
+        
+        house_attributes = self._market_matrix
+        attr_coeff = self._coeff
+        result = np.array(house_attributes) * np.array(attr_coeff)
+        util = np.sum(result, axis=1)
+        exp_util = np.exp(util)
+        total_util = np.sum(exp_util)
+        prop_share = exp_util[index_to_optimize] / total_util
+        overall_share = prop_share * self._p_GO
 
+        return overall_share
 
 
 

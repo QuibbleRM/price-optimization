@@ -149,12 +149,13 @@ for rm in rental_market:
     for m in market_data:
         m = m.drop_duplicates(subset = ['id'])
         m["ToOptimize"] = m['id'].apply(lambda x: 1 if str(x) == str(rm._id) else 0)
-        m = m.sort_values(by = 'ToOptimize', ascending = False)
         m = m.query('available == True or ToOptimize == 1')
+        m = m.sort_values(by = 'ToOptimize', ascending = False)
         to_optimize = (m['ToOptimize'] == 1).any()
         num_comp = m.shape[0]
         if to_optimize and num_comp > 1:
-            i = m["mc"][0]
+            #i = m["mc"][0]
+            i = float(m.iloc[0]["mc"])
             client_placeholder = m.at[0,"id"]
             date_placeholder = m.at[0,"calendarDate"]
             optim = optimize_price(m,i)

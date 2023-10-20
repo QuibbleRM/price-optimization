@@ -349,8 +349,8 @@ def push_report(optimized_pricing):
 
 def push_data(optimized_pricing):
         
-    price_collection  = merlin_hunter["scrapy_quibble"]["dynamic_pricing_test"]
-    #price_collection  = revenue_dev["DB_quibble"]["dynamic_pricing"]
+    #price_collection  = merlin_hunter["scrapy_quibble"]["dynamic_pricing_test"]
+    price_collection  = revenue_dev["DB_quibble"]["dynamic_pricing"]
 
     #_listing_id = optimized_pricing["listing_id"]
     _property_id = optimized_pricing["property_id"]

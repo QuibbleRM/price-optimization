@@ -23,12 +23,13 @@ class PropertyAttribute:
     _landscape_views = 0
     _id = 0
 
-    def __init__(self,price,review_count,image_score,bedroom,min_stay,distance,pool,jacuzzi,landscape_views,id):
+    def __init__(self,price,review_count,image_score,bedroom,rating_value,min_stay,distance,pool,jacuzzi,landscape_views,id):
 
         self._price = price
         self._review_count = review_count
         self._image_score = image_score
         self._bedroom = bedroom
+        self._rating_value = rating_value
         self._min_stay = min_stay
         self._distance = distance
         self._pool = pool

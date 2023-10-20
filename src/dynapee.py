@@ -76,10 +76,9 @@ class PriceModel(IPriceModel):
         util = np.sum(result, axis=1)
         exp_util = np.exp(util)
         total_util = np.sum(exp_util)
-        prop_share = exp_util[index_to_optimize] / total_util
-        overall_share = prop_share * self._p_GO
+        normalized_util = exp_util/total_util
 
-        return overall_share
+        return normalized_util
 
 
 

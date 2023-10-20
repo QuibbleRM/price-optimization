@@ -29,7 +29,7 @@ def merlindb_connect():
 def get_property_info(property_ids: list[str]):
     
 
-    property_colllection = revenue_os["DB_quibble"]["properties"]
+    property_colllection = revenue_dev["DB_quibble"]["properties"]
     
     property_match = {
             "airBnbId": {"$in": property_ids}

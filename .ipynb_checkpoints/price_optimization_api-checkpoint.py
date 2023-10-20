@@ -9,8 +9,6 @@ import time
 from datetime import datetime, timedelta
 import abc
 
-def instance_to_array(instance):
-    return [value for key, value in instance.__dict__.items()]
 
 mc_factor = pd.read_csv("bookable_search.csv")
 def get_mc_factor(calendar_date: str):
@@ -24,7 +22,7 @@ def get_mc_factor(calendar_date: str):
             
     return factor.Bookable_Search.iloc[0]
 
-def calculate_price(dat, choice = 1):
+def optimize_price(dat, choice = 1):
             
     m = dat.copy()
     m['price'] = m.price.astype(str)
@@ -37,19 +35,6 @@ def calculate_price(dat, choice = 1):
     i = 0  
     j = "Optimized_Price"
     m.at[i, j] = res[1]
-    
-    return m
-
-def calculate_share(dat, choice = 1):
-            
-    m = dat.copy()
-    m['price'] = m.price.astype(str)
-    m['price'] = m['price'].str.replace('$', '')
-    m['price'] = m['price'].str.replace(',', '')
-    mat =  m.iloc[:,:10].values.astype(float)
-    dynasaur = PriceModel(market_matrix = mat, coeff = [-0.0062, 0.0003, 0.0879, 0.1106, 0.3239, 0.015, 0.0002, 0.011, 0.42, 0.141], mc = choice)
-    res = dynasaur.compute_share()
-    m["Market_Share"] = res
     
     return m
 
@@ -72,48 +57,13 @@ class IPriceAPI(abc.ABC):
 
 class PriceAPI(IPriceAPI):
 
-    def optimize_price(self,listing_id: str, calendar_date: str):
-        
-        optimized_price = None
-        
-        market_data = self.build_matrix(listing_id,calendar_date)
-        market_data = market_data.drop_duplicates(subset = ['id'])
-        market_data["ToOptimize"] = market_data['id'].apply(lambda x: 1 if str(x) == str(listing_id) else 0)
-        market_data = market_data.query('available == True or ToOptimize == 1')
-        market_data = market_data.sort_values(by = 'ToOptimize', ascending = False)
-        to_optimize = (market_data['ToOptimize'] == 1).any()
-        num_comp = market_data.shape[0]
-        if to_optimize and num_comp > 1:
-            i = float(market_data.iloc[0]["mc"])
-            optimized_price = calculate_price(market_data,i)
-        
-        return optimized_price
-            
+    def optimize_price(listing_id: str, calendar_date: str):
+        pass
 
-    def compute_share(self,property_info: PropertyAttribute, calendar_date: str):
+    def compute_share(property_info: PropertyAttribute):
+        pass
 
-    
-        market_share = 0
-        listing_id = property_info._id
-
-        market_data = self.build_matrix(listing_id,calendar_date)
-        market_data = market_data.drop_duplicates(subset = ['id'])
-        market_data["ToOptimize"] = market_data['id'].apply(lambda x: 1 if str(x) == str(listing_id) else 0)
-        market_data = market_data.query('available == True or ToOptimize == 1')
-        market_data = market_data.sort_values(by = 'ToOptimize', ascending = False)
-        property_attr = instance_to_array(property_info)
-        market_data.iloc[0, 0:11] = property_attr
-        to_optimize = (market_data['ToOptimize'] == 1).any()
-        num_comp = market_data.shape[0]
-        if to_optimize and num_comp > 1:
-            i = float(market_data.iloc[0]["mc"])
-            market_share = calculate_share(market_data,i)
-        
-
-        return market_share
-
-
-    def build_matrix(self,listing_id: str, calendar_date: str):
+    def build_matrix(listing_id: str, calendar_date: str):
         
         
         client_property_data = get_property_info([listing_id])[0]
@@ -135,7 +85,7 @@ class PriceAPI(IPriceAPI):
 
 
         comp_list = []
-        [comp_list.append(x) for x in rental_market._competitors]
+        [comp_list.extend(x) for x in rental_market._competitors]
                 
 
         client_listing = pd.DataFrame(get_listing_info([listing_id]))
@@ -150,12 +100,11 @@ class PriceAPI(IPriceAPI):
 
 
         market_availabilities = pd.DataFrame(get_availability_info(all_ids,[calendar_date]))
-        #market_listing= pd.merge(market_listing,market_availabilities,on="id", how = 'outer')
-        market_listing= pd.merge(market_listing,market_availabilities,on="id", how = 'inner')
+        market_listing= pd.merge(market_listing,market_availabilities,on="id", how = 'outer')
         market_listing['dist'] = 0
 
 
-        market_data = market_listing[["price","review_count","Adjusted","bedrooms","rating_value","minNights","dist","pool","jacuzzi","landscape_views","id","available","calendarDate","listing_hashId"]]
+        market_data = market_listing[["price","review_count","Adjusted","bedrooms","rating_value","minNights","dist","pool","jacuzzi","landscape_views","available","id","calendarDate","listing_hashId"]]
         market_data["mc"] = market_data["calendarDate"].apply(get_mc_factor)
         
         return market_data
@@ -163,3 +112,49 @@ class PriceAPI(IPriceAPI):
 
 
 
+
+        # optimized_data = []
+        # report_date = (datetime.now() - timedelta(days=1))
+        # report_date = report_date.strftime("%Y-%m-%d")
+                    
+        # RMid = 1
+        # for rm in rental_market:
+        #     for m in market_data:
+        #         m = m.drop_duplicates(subset = ['id'])
+        #         m["ToOptimize"] = m['id'].apply(lambda x: 1 if str(x) == str(rm._id) else 0)
+        #         m = m.query('available == True or ToOptimize == 1')
+        #         m = m.sort_values(by = 'ToOptimize', ascending = False)
+        #         to_optimize = (m['ToOptimize'] == 1).any()
+        #         num_comp = m.shape[0]
+        #         if to_optimize and num_comp > 1:
+        #             #i = m["mc"][0]
+        #             i = float(m.iloc[0]["mc"])
+        #             client_placeholder = m.at[0,"id"]
+        #             date_placeholder = m.at[0,"calendarDate"]
+        #             optim = optimize_price(m,i)
+        #             optim["report_date"] = report_date
+        #             optim["ClientId"] = optim.at[0,"id"]
+        #             optim["RMid"] = RMid
+        #             RMid+=1
+        #             optimized_data.append(optim)
+
+        # optimized_pricing = pd.concat(optimized_data,axis=0, ignore_index=True)
+
+
+
+        # client_property_data = pd.DataFrame(client_property_data)
+        # client_property_data = client_property_data[["listing_id","user_id","_id"]]
+        # client_property_data["listing_id"] = client_property_data.listing_id.astype(str)
+        # client_property_data.columns = ["id","user_id","hashId"]
+
+        # optimized_pricing["id"] = optimized_pricing.id.astype(str)
+        # optimized_pricing["ClientId"] = optimized_pricing.id.astype(str)
+        # optimized_pricing = optimized_pricing.query('id == ClientId and Optimized_Price > 0')
+        # optimized_pricing = pd.merge(optimized_pricing,client_property_data,how = "left",on="id")
+        # result = optimized_pricing.groupby(['hashId', 'user_id', 'listing_hashId'])[["calendarDate","Optimized_Price","price"]].agg(list).reset_index()
+        # result_list = result.to_dict(orient='records')
+        # formatted_data_list = [format_data(item) for item in result_list]
+                
+            
+        # for f in formatted_data_list:
+        #     push_data(f)

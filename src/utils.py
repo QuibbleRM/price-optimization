@@ -397,7 +397,7 @@ def format_data(input_data):
                     )
                 },
                 'price': {
-                    d: p
+                    d: float(p)
                     for d, p in zip(
                         extracted_data['calendarDate'],
                         extracted_data['price']

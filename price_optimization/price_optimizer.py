@@ -1,5 +1,5 @@
 import os
-from dynapee import PriceModel
+from .dynapee import PriceModel
 import pandas as pd
 from pymongo import MongoClient
 from datetime import datetime

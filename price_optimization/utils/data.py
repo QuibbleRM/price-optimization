@@ -3,7 +3,7 @@ import numpy as np
 from datetime import datetime, timedelta
 from scipy.stats import binom
 from scipy.stats import norm
-from utils.general import check_patterns_occurrence
+from .general import check_patterns_occurrence
 from pymongo.collection import Collection
 
 def get_image_scores(property_ids: list[str], image_scores_collection: Collection):

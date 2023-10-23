@@ -47,7 +47,7 @@ class PriceOptimizer:
         return processed_data
 
     def build_matrix(self,listing_id: str, calendar_date: str):
-        revOS = MongoClient(os.getenv('MONGO_REVENUE_OS_URI'), socketTimeoutMS=1800000, connectTimeoutMS=1800000) 
+        revOS = MongoClient(os.getenv('MONGO_REVENUE_OS_URI'), socketTimeoutMS=1800000, connectTimeoutMS=1800000)
         merlinHunter = MongoClient(os.getenv('MONGO_MERLIN_HUNTER_URI'), socketTimeoutMS=1800000, connectTimeoutMS=1800000)
 
         client_property_data = get_property_info([listing_id], revOS['DB_quibble']['properties'])[0]
@@ -69,20 +69,20 @@ class PriceOptimizer:
         comp_list = []
         [comp_list.append(x) for x in rental_market._competitors]
                 
-        client_listing = pd.DataFrame(get_listing_info([listing_id], merlinHunter["scrapy_quibble"]["scrapy_image_scores"]))
-        competitor_listing = pd.DataFrame(get_listing_info(comp_list, merlinHunter["scrapy_quibble"]["scrapy_image_scores"]))
+        client_listing = pd.DataFrame(get_listing_info([listing_id], merlinHunter["scrapy_quibble"]["scrapy_listing"]))
+        competitor_listing = pd.DataFrame(get_listing_info(comp_list, merlinHunter["scrapy_quibble"]["scrapy_listing"]))
         market_listing = pd.concat([client_listing,competitor_listing],axis = 0)
         market_listing["bedrooms"] = pd.to_numeric(market_listing["bedrooms"], errors="coerce").fillna(0).astype(int)
         market_listing.rename(columns={'_id': 'listing_hashId'}, inplace=True)
         market_listing = parse_scrap_info(market_listing)
-        market_listing = pd.merge(market_listing,image_scores, on = "id", how = "outer")
+        market_listing = pd.merge(market_listing,image_scores, on="id", how = "outer")
         market_listing["Reference"].fillna(market_listing["Reference"].mean(),inplace = True)
         market_listing["Adjusted"].fillna(market_listing["Adjusted"].mean(),inplace = True)
 
-        market_availabilities = pd.DataFrame(get_availability_info(all_ids,[calendar_date], merlinHunter["scrapy_quibble"]["scrapy_availability"]))
-        market_listing= pd.merge(market_listing,market_availabilities,on="id", how = 'inner')
+        market_availabilities = pd.DataFrame(get_availability_info(all_ids, [calendar_date], merlinHunter["scrapy_quibble"]["scrapy_availability"]))
+        market_listing= pd.merge(market_listing, market_availabilities, on="id", how='inner')
         market_listing['dist'] = 0
-
+        
         market_data = market_listing[["price","review_count","Adjusted","bedrooms","rating_value","minNights","dist","pool","jacuzzi","landscape_views","id","available","calendarDate","listing_hashId"]]
         market_data["mc"] = market_data["calendarDate"].apply(get_mc_factor)
         
@@ -122,8 +122,3 @@ class PriceOptimizer:
             market_share = self.calculate_metric(market_data,i,"share")
 
         return market_share
-
-
-
-
-

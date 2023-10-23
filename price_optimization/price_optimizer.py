@@ -17,7 +17,7 @@ from .utils.data import (
 
 class PriceOptimizer:
     def __init__(self):
-        self.mc_factor = pd.read_csv("files/bookable_search.csv")
+        self.mc_factor = pd.read_csv("./files/bookable_search.csv")
 
     def get_mc_factor(self, calendar_date: str) -> float:
         date_obj = datetime.strptime(calendar_date, "%Y-%m-%d")

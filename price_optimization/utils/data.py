@@ -90,7 +90,7 @@ def parse_scrap_info(scrap_dataframe: pd.DataFrame):
     return scrape_list_df
 
 def get_mc_factor(calendar_date: str):
-    mc_factor = pd.read_csv("files/bookable_search.csv")
+    mc_factor = pd.read_csv("./files/bookable_search.csv")
     date_obj = datetime.strptime(calendar_date, "%Y-%m-%d")
     day_of_week = date_obj.strftime("%a")
     month = date_obj.strftime("%B")

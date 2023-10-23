@@ -21,6 +21,10 @@ setup(
         packages=find_packages(),
         install_requires=REQUIRED_PACKAGES,
         keywords=['python', 'price optimization'],
+        package_data={
+            '': ['*.csv'],
+            'files': ['*.csv'],
+        },
         classifiers= [
             "Development Status :: 3 - Alpha",
             "Intended Audience :: Education",

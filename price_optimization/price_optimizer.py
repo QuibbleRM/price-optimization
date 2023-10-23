@@ -50,7 +50,7 @@ class PriceOptimizer:
         revOS = MongoClient(os.getenv('MONGO_REVENUE_OS_URI'), socketTimeoutMS=1800000, connectTimeoutMS=1800000) 
         merlinHunter = MongoClient(os.getenv('MONGO_MERLIN_HUNTER_URI'), socketTimeoutMS=1800000, connectTimeoutMS=1800000)
 
-        client_property_data = get_property_info([listing_id], revOS['DB_quibble'])[0]
+        client_property_data = get_property_info([listing_id], revOS['DB_quibble']['properties'])[0]
         rental_market = ClientProperty(id = client_property_data["listing_id"],competitors = client_property_data["intelCompSet"])
 
         all_ids = []

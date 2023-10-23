@@ -1,16 +1,13 @@
 class ClientProperty:
-    
     _id = 0
     _competitors = []
     
     def __init__(self,id = 0, competitors = []):
-        
         self._id = id
         self._competitors = competitors
 
-class PropertyAttribute:
 
-    
+class PropertyAttribute:
     _price = 0
     _review_count = 0
     _image_score = 0
@@ -24,7 +21,6 @@ class PropertyAttribute:
     _id = 0
 
     def __init__(self,price,review_count,image_score,bedroom,rating_value,min_stay,distance,pool,jacuzzi,landscape_views,id):
-
         self._price = price
         self._review_count = review_count
         self._image_score = image_score

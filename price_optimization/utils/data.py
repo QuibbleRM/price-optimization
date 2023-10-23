@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
@@ -90,7 +91,10 @@ def parse_scrap_info(scrap_dataframe: pd.DataFrame):
     return scrape_list_df
 
 def get_mc_factor(calendar_date: str):
-    mc_factor = pd.read_csv("./files/bookable_search.csv")
+    current_dir = os.path.dirname(__file__)
+    parent_dir = os.path.dirname(current_dir)
+    csv_file_path = os.path.join(parent_dir, 'files', 'bookable_search.csv')
+    mc_factor = pd.read_csv(csv_file_path)
     date_obj = datetime.strptime(calendar_date, "%Y-%m-%d")
     day_of_week = date_obj.strftime("%a")
     month = date_obj.strftime("%B")

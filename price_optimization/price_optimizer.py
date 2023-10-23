@@ -3,7 +3,7 @@ from .dynapee import PriceModel
 import pandas as pd
 from pymongo import MongoClient
 from datetime import datetime
-from data_struct import ClientProperty, PropertyAttribute
+from .data_struct import ClientProperty, PropertyAttribute
 from utils.general import instance_to_array
 from utils.data import (
     get_image_scores, 

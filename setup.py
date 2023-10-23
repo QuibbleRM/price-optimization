@@ -25,6 +25,7 @@ setup(
             '': ['*.csv'],
             'files': ['*.csv'],
         },
+        include_package_data=True,
         classifiers= [
             "Development Status :: 3 - Alpha",
             "Intended Audience :: Education",

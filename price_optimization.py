@@ -16,7 +16,7 @@ from multiprocessing import Pool
 prop_ids = pd.read_json("posto.json", dtype = str)
 prop_ids = prop_ids[prop_ids.airBnbId != "nan"]
 client_property_ids = list(prop_ids.airBnbId.astype(str))
-offset = 50
+offset = 365
 
 
 

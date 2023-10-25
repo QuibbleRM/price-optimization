@@ -217,19 +217,19 @@ push_report(optimized_pricing)
 
 
 
-# client_property_data = pd.DataFrame(client_property_data)
-# client_property_data = client_property_data[["listing_id","user_id","_id"]]
-# client_property_data["listing_id"] = client_property_data.listing_id.astype(str)
-# client_property_data.columns = ["id","user_id","hashId"]
+client_property_data = pd.DataFrame(client_property_data)
+client_property_data = client_property_data[["listing_id","user_id","_id"]]
+client_property_data["listing_id"] = client_property_data.listing_id.astype(str)
+client_property_data.columns = ["id","user_id","hashId"]
 
-# optimized_pricing["id"] = optimized_pricing.id.astype(str)
-# optimized_pricing["ClientId"] = optimized_pricing.id.astype(str)
-# optimized_pricing = optimized_pricing.query('id == ClientId and Optimized_Price > 0')
-# optimized_pricing = pd.merge(optimized_pricing,client_property_data,how = "left",on="id")
-# result = optimized_pricing.groupby(['hashId', 'user_id', 'listing_hashId'])[["calendarDate","Optimized_Price","price"]].agg(list).reset_index()
-# result_list = result.to_dict(orient='records')
-# formatted_data_list = [format_data(item) for item in result_list]
+optimized_pricing["id"] = optimized_pricing.id.astype(str)
+optimized_pricing["ClientId"] = optimized_pricing.id.astype(str)
+optimized_pricing = optimized_pricing.query('id == ClientId and Optimized_Price > 0')
+optimized_pricing = pd.merge(optimized_pricing,client_property_data,how = "left",on="id")
+result = optimized_pricing.groupby(['hashId', 'user_id', 'listing_hashId'])[["calendarDate","Optimized_Price","price"]].agg(list).reset_index()
+result_list = result.to_dict(orient='records')
+formatted_data_list = [format_data(item) for item in result_list]
         
      
-# for f in formatted_data_list:
-#     push_data(f)
+for f in formatted_data_list:
+    push_data(f)

@@ -97,8 +97,13 @@ market_availabilities = pd.DataFrame(get_availability_info(all_ids,calendar_date
 market_listing= pd.merge(market_listing,market_availabilities,on="id", how = 'outer')
 market_listing['dist'] = 0
 
+## Custom for posto - for modification
+mc_factor = pd.read_csv("posto_bookable_search.csv", sep = ";")
+mc_factor = mc_factor[['MONTH', 'DOW','Bookable Searches']]
+mc_factor.columns = ['Month','Day','Bookable_Search']
+mc_factor['Bookable_Search'] = mc_factor['Bookable_Search'].str.replace(',', '.')
+mc_factor.Bookable_Search = mc_factor.Bookable_Search.astype(float)
 
-mc_factor = pd.read_csv("posto_bookable_search.csv")
 def get_mc_factor(calendar_date: str):
     
     

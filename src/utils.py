@@ -342,7 +342,7 @@ def get_image_scores(property_ids: list[str]):
 def push_report(optimized_pricing):
 
     _optimized_pricing = optimized_pricing.to_dict(orient="records") 
-    price_collection  = merlin_hunter["scrapy_quibble"]["dynamic_pricing_report"]
+    price_collection  = merlin_hunter["scrapy_quibble"]["dynamic_pricing_report_posto"]
     price_collection.insert_many(_optimized_pricing)
     
 

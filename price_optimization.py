@@ -13,11 +13,10 @@ from multiprocessing import Pool
 
 
 
-prop_ids = pd.read_json("prop.json", dtype = str)
+prop_ids = pd.read_json("posto.json", dtype = str)
 prop_ids = prop_ids[prop_ids.airBnbId != "nan"]
 client_property_ids = list(prop_ids.airBnbId.astype(str))
-client_property_ids = client_property_ids[:10]
-offset = 5
+offset = 50
 
 
 
@@ -99,13 +98,14 @@ market_listing= pd.merge(market_listing,market_availabilities,on="id", how = 'ou
 market_listing['dist'] = 0
 
 
-mc_factor = pd.read_csv("bookable_search.csv")
+mc_factor = pd.read_csv("posto_bookable_search.csv")
 def get_mc_factor(calendar_date: str):
     
     
     date_obj = datetime.strptime(calendar_date, "%Y-%m-%d")
     day_of_week = date_obj.strftime("%a")
-    month = date_obj.strftime("%B")
+    ## changed to lower B for bookable_search of posto
+    month = date_obj.strftime("%b")
     q = f'Month == "{month}" & Day == "{day_of_week}"'
     factor = mc_factor.query(q)
     
@@ -205,11 +205,8 @@ def main(rental_market, market_data, report_date):
     return optimized_data
 
 optimized_data = main(rental_market,market_data,report_date)
-
-#optimized_pricing = pd.concat(optimized_data,axis=0, ignore_index=True)
-
-
-#push_report(optimized_pricing)
+optimized_pricing = pd.concat(optimized_data,axis=0, ignore_index=True)
+push_report(optimized_pricing)
 
 
 

@@ -117,33 +117,15 @@ class PriceOptimizer:
         return processed_data
 
     def _compute_share(self, image_set):
-        market_share = pd.DataFrame([{
-            "id": None,
-            "name": None,
-            "description": None,
-            "price": None,
-            "review_count": None,
-            "adjusted": None,
-            "bedrooms": None,
-            "rating_value": None,
-            "min_nights": None,
-            "dist": None,
-            "pool": None,
-            "jacuzzi": None,
-            "landscape_views": None,
-            "available": None,
-            "calendar_date": None,
-            "listing_hash_id": None,
-            "mc": None,
-            "to_optimize": None,
-            "image_score": None,
-            "bedroom": None,
-            "min_stay": None,
-            "distance": None,
-            "market_share": None,
-        }])
+        columns = [
+            "id", "name", "description", "price", "review_count", "adjusted", "bedrooms",
+            "rating_value", "min_nights", "dist", "pool", "jacuzzi", "landscape_views", 
+            "available", "calendar_date", "listing_hash_id", "mc", "to_optimize"
+        ]
+        market_share = pd.DataFrame(columns=columns)
         market_listing_data = self._get_listing_data(image_set=image_set)
         prop_info_dict = vars(self.property_info)
+        prop_info_dict["adjusted"] = prop_info_dict.pop("image_score")
         market_listing_data.loc[0, prop_info_dict.keys()] = prop_info_dict.values()
         to_optimize = (market_listing_data['to_optimize'] == 1).any()
         num_comp = market_listing_data.shape[0]

@@ -16,11 +16,10 @@ arguments = sys.argv[1:]
 
 email_id = [arguments[0]]
 offset = [arguments[1]]
+workers = [arguments[2]]
 
-prop_ids = pd.read_json("posto.json", dtype = str)
-prop_ids = prop_ids[prop_ids.airBnbId != "nan"]
-client_property_ids = list(prop_ids.airBnbId.astype(str))
-
+user_ids = get_user_ids(email_id)
+client_property_ids = get_property_info_by_user(user_ids)
 
 
 
@@ -99,11 +98,7 @@ market_availabilities = pd.DataFrame(get_availability_info(all_ids,calendar_date
 market_listing= pd.merge(market_listing,market_availabilities,on="id", how = 'outer')
 market_listing['dist'] = 0
 
-## Custom for posto - for modification
-mc_factor = pd.read_csv("posto_bookable_search.csv", sep = ";")
-mc_factor = mc_factor[['MONTH', 'DOW','Bookable Searches']]
-mc_factor.columns = ['Month','Day','Bookable_Search']
-mc_factor['Bookable_Search'] = mc_factor['Bookable_Search'].str.replace(',', '.')
+mc_factor = pd.DataFrame(get_user_mc_factor([email_id]))
 mc_factor.Bookable_Search = mc_factor.Bookable_Search.astype(float)
 
 def get_mc_factor(calendar_date: str):
@@ -112,7 +107,7 @@ def get_mc_factor(calendar_date: str):
     date_obj = datetime.strptime(calendar_date, "%Y-%m-%d")
     day_of_week = date_obj.strftime("%a")
     ## changed to lower B for bookable_search of posto
-    month = date_obj.strftime("%b")
+    month = date_obj.strftime("%B")
     q = f'Month == "{month}" & Day == "{day_of_week}"'
     factor = mc_factor.query(q)
     
@@ -154,26 +149,6 @@ optimized_data = []
 report_date = (datetime.now() - timedelta(days=1))
 report_date = report_date.strftime("%Y-%m-%d")
             
-# RMid = 1
-# for rm in rental_market:
-#     for m in market_data:
-#         m = m.drop_duplicates(subset = ['id'])
-#         m["ToOptimize"] = m['id'].apply(lambda x: 1 if str(x) == str(rm._id) else 0)
-#         m = m.query('available == True or ToOptimize == 1')
-#         m = m.sort_values(by = 'ToOptimize', ascending = False)
-#         to_optimize = (m['ToOptimize'] == 1).any()
-#         num_comp = m.shape[0]
-#         if to_optimize and num_comp > 1:
-#             #i = m["mc"][0]
-#             i = float(m.iloc[0]["mc"])
-#             optim = optimize_price(m,i)
-#             optim["report_date"] = report_date
-#             optim["ClientId"] = optim.at[0,"id"]
-#             optim["RMid"] = RMid
-#             RMid+=1
-#             optimized_data.append(optim)
-
-
 
 def process_market_data(args):
     m, rm, report_date, RMid = args
@@ -203,7 +178,7 @@ def main(rental_market, market_data, report_date):
             RMid += 1
 
     # Use multiprocessing to process market data in parallel
-    with Pool(processes=8) as pool:  # Adjust the number of processes based on your system's capabilities
+    with Pool(processes=workers) as pool:  # Adjust the number of processes based on your system's capabilities
         optimized_data = pool.map(process_market_data, args)
 
     # Filter out None results if there's a chance process_market_data could return None

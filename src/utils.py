@@ -342,14 +342,14 @@ def get_image_scores(property_ids: list[str]):
 def push_report(optimized_pricing):
 
     _optimized_pricing = optimized_pricing.to_dict(orient="records") 
-    price_collection  = merlin_hunter["scrapy_quibble"]["dynamic_pricing_report_posto"]
+    price_collection  = merlin_hunter["scrapy_quibble"]["dynamic_pricing_report_multiple"]
     price_collection.insert_many(_optimized_pricing)
     
 
 
 def push_data(optimized_pricing):
         
-    price_collection  = merlin_hunter["scrapy_quibble"]["dynamic_pricing_test_posto"]
+    price_collection  = merlin_hunter["scrapy_quibble"]["dynamic_pricing_multipletest"]
     #price_collection  = revenue_dev["DB_quibble"]["dynamic_pricing"]
 
     #_listing_id = optimized_pricing["listing_id"]
@@ -412,3 +412,113 @@ def format_data(input_data):
     }
     return formatted_data
     
+
+def get_user_ids(email_ids: list[str]):
+    
+
+    user_colllection = revenue_os["DB_quibble"]["users"]
+    
+    user_match = {
+            "email": {"$in": email_ids}
+        } if email_ids else {}
+
+    user_query = [
+                {
+                    "$match": user_match
+                },
+                {
+                    "$project": {
+                        "_id": 1
+                    }
+                }
+            ]
+    
+    users: Iterable[dict] = user_colllection.aggregate(user_query)
+
+
+    user_list = []
+
+    for _user in users:
+        
+        user_list.append(_user.get('_id'))
+
+    return user_list
+
+from bson import ObjectId
+
+def get_property_info_by_user(user_ids: list[ObjectId]):
+    
+
+    property_colllection = revenue_os["DB_quibble"]["properties"]
+    
+    property_match = {
+            "userId": {"$in": user_ids}, "active": True,
+        } if user_ids else {}
+
+    property_query = [
+                {
+                    "$match": property_match
+                },
+                {
+                    "$project": {
+                        "_id": {"$toString": "$_id"},
+                        "listing_id": "$airBnbId",
+                        "virbo_id": "$virboId",
+                        "intelCompSet": "$intelCompSet",
+                        "id": "$id",
+                        "user_id": {"$toString": "$userId"},
+                        "name": 1
+                    }
+                }
+            ]
+    
+    properties: Iterable[dict] = property_colllection.aggregate(property_query)
+
+
+    property_list = []
+
+    for _property in properties:
+
+        if not _property.get('listing_id'):
+            if not _property.get('virbo_id'):
+                continue
+            continue
+
+        property_list.append(_property)
+    
+    return property_list
+
+
+def get_user_mc_factor(email_ids: list[str]):
+    
+
+    mc_colllection = merlin_hunter["scrapy_quibble"]["bookable_search"]
+    
+    mc_match = {
+            "User": {"$in": email_ids},
+        } if email_ids else {}
+
+    mc_query = [
+                {
+                    "$match": mc_match
+                },
+                {
+                    "$project": {
+                        "_id": 0,
+                        "Month": "$Month",
+                        "Day": "$Day",
+                        "Bookable_Search": "$Bookable_Search",
+                        "User": "$User",
+                    }
+                }
+            ]
+    
+    mcs: Iterable[dict] = mc_colllection.aggregate(mc_query)
+
+
+    mc_list = []
+
+    for _mc in mcs:
+        mc_list.append(_mc)
+    
+    return mc_list

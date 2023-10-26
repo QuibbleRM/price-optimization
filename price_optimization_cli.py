@@ -19,7 +19,7 @@ offset = int(arguments[1])
 workers = int(arguments[2])
 
 user_ids = get_user_ids(email_id)
-client_property_ids = get_property_info_by_user(user_ids)
+#client_property_ids = get_property_info_by_user(user_ids)
 
 
 
@@ -36,7 +36,8 @@ for date_str in date_strings:
     calendar_dates.append(date_str)
 
 
-client_property_data = get_property_info(client_property_ids)
+#client_property_data = get_property_info(client_property_ids)
+client_property_data = get_property_info_by_user(user_ids)
 
 
 rental_market = []

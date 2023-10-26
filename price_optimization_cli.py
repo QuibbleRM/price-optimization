@@ -15,8 +15,8 @@ import sys
 arguments = sys.argv[1:] 
 
 email_id = [arguments[0]]
-offset = int([arguments[1]])
-workers = int([arguments[2]])
+offset = int(arguments[1])
+workers = int(arguments[2])
 
 user_ids = get_user_ids(email_id)
 client_property_ids = get_property_info_by_user(user_ids)

@@ -104,15 +104,18 @@ mc_factor.Bookable_Search = mc_factor.Bookable_Search.astype(float)
 
 def get_mc_factor(calendar_date: str):
     
-    
+    mc = 1
     date_obj = datetime.strptime(calendar_date, "%Y-%m-%d")
     day_of_week = date_obj.strftime("%a")
     ## changed to lower B for bookable_search of posto
     month = date_obj.strftime("%B")
     q = f'Month == "{month}" & Day == "{day_of_week}"'
     factor = mc_factor.query(q)
-    
-    return factor.Bookable_Search.iloc[0]
+    if not factor.empty:
+        factor = factor.to_dict(orient='records')
+        factor = factor[0]['Bookable_Search']
+        mc = factor
+    return mc
 
 
 

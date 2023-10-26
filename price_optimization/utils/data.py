@@ -8,50 +8,34 @@ from .general import check_patterns_occurrence
 from pymongo.collection import Collection
 
 def get_image_scores(property_ids: list[str], image_scores_collection: Collection):
-    if property_ids:
-        score_match = {
-            "Listings": {"$in": property_ids}
-        }
-    else:
-        score_match = {}
     score_query = [
                 {
-                    "$match": score_match
+                    "$match": {"Listings": {"$in": property_ids}}
                 },
                 {
                     "$project": {
                         "_id": {"$toString": "$_id"},
-                        "Listings": "$Listings",
-                        "Score": "$Score"
+                        "listings": "$Listings",
+                        "file":  "$File",
+                        "score": "$Score"
                         
                     }
                 }
             ]
     
-    scores = image_scores_collection.aggregate(score_query)
-
-    score_list = []
-    for _score in scores:
-        if not _score.get('Listings'):
-            continue
-        score_list.append(_score)
-    
-    return score_list
+    return list(image_scores_collection.aggregate(score_query))
 
 def get_listing_info(listing_ids: list[str], listings_collection: Collection):
-    if listing_ids:
-        scrapy_match = {"id": {"$in": listing_ids}}
-    else:
-        scrapy_match = {}
-
     scrapy_query = [
         {
-            "$match": scrapy_match
+            "$match": {"id": {"$in": listing_ids}}
         },
         {
             "$project": {
                 "_id": {"$toString": "$_id"},
                 "id": "$id",
+                "name": "$name",
+                "description": "$description",
                 "amenities": "$amenities",
                 "accomodates": "$accomodates",
                 "bathrooms": "$bathrooms",
@@ -73,14 +57,7 @@ def get_listing_info(listing_ids: list[str], listings_collection: Collection):
         }
     ]
 
-    scrapy_listings = list(listings_collection.aggregate(scrapy_query))
-    scrapy_list = []
-    for _list in scrapy_listings:
-        if not _list.get('id'):
-            continue
-        scrapy_list.append(_list)
-
-    return scrapy_list
+    return list(listings_collection.aggregate(scrapy_query))
 
 def parse_scrap_info(scrap_dataframe: pd.DataFrame):
     scrape_list_df = scrap_dataframe
@@ -105,16 +82,12 @@ def get_mc_factor(calendar_date: str):
     return factor.Bookable_Search.iloc[0]
 
 def get_property_info(property_ids: list[str], properties_collection: Collection):
-    if property_ids:
-        property_match = {
-            "airBnbId": {"$in": property_ids}
-        }
-    else:
-        property_match = {}
-
     property_query = [
                 {
-                    "$match": property_match
+                    "$match": {
+                        "airBnbId": {"$in": property_ids},
+                        'virboId': {"$exists": True},
+                    }
                 },
                 {
                     "$project": {
@@ -128,22 +101,11 @@ def get_property_info(property_ids: list[str], properties_collection: Collection
                     }
                 }
             ]
-    properties = properties_collection.aggregate(property_query)
 
-
-    property_list = []
-    for _property in properties:
-        if not _property.get('listing_id'):
-            if not _property.get('virbo_id'):
-                continue
-            continue
-
-        property_list.append(_property)
-
-    return property_list
+    return list(properties_collection.aggregate(property_query))
 
 def odd_weighted_average(row):
-    values = list(row["Scores"])
+    values = list(row["scores"])
     
     mean_score = np.mean(values)
     sd_score = np.std(values)
@@ -188,29 +150,20 @@ def get_availability_info(listing_ids: list[str], calendar_date: list[str], avai
 
     availability_query = [
                 {
-                    "$match": availability_match
+                    "$match": availability_match,
                 },
                 {
                     "$project": {
                         "_id": 0,
                         "id": "$listing_id",
-                        "calendarDate": "$calendarDate",
+                        "calendar_date": "$calendarDate",
                         "scraped_date": "$scraped_date",
                         "available": "$available",
-                        "minNights": "$minNights",
+                        "min_nights": "$minNights",
                         "price": { "$ifNull" : [ "$price", 0 ] }
                     }
                 }
 
             ]
-    
-    availabilities = availability_collection.aggregate(availability_query)
-
-    available_list = []
-    for _avail in availabilities:
-        if not _avail.get('id'):
-            continue
-
-        available_list.append(_avail)
         
-    return available_list
+    return list(availability_collection.aggregate(availability_query))

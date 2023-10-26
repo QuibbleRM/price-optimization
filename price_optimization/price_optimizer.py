@@ -4,7 +4,6 @@ import pandas as pd
 from pymongo import MongoClient
 from datetime import datetime
 from .data_struct import ClientProperty, PropertyAttribute
-from .utils.general import instance_to_array
 from .utils.data import (
     get_image_scores, 
     get_listing_info, 
@@ -16,109 +15,166 @@ from .utils.data import (
 )
 
 class PriceOptimizer:
-    def __init__(self):
+    COEFFICIENTS = [-0.0062, 0.0003, 0.0879, 0.1106, 0.3239, 0.015, 0.0002, 0.011, 0.42, 0.141]
+    PROPERTY_ATTRS_COLUMNS = [
+            "price",
+            "review_count",
+            "adjusted",
+            "bedrooms",
+            "rating_value",
+            "min_nights",
+            "dist",
+            "pool",
+            "jacuzzi",
+            "landscape_views"
+        ]
+
+    def __init__(self, property_info: PropertyAttribute, calendar_date: str):
+        self.property_info = property_info
+        self.calendar_date = calendar_date
+
+        self._setup_file_paths()
+        self._setup_database_connections()
+
+        client_property_data = get_property_info([self.property_info.id], self.revOS['DB_quibble']['properties'])[0]
+        self.rental_market = ClientProperty(id=client_property_data["listing_id"], competitors=client_property_data["intelCompSet"])
+
+        self.all_ids = list(set([client_property_data["listing_id"]] + client_property_data["intelCompSet"]))
+
+    def _setup_file_paths(self) -> None:
         current_dir = os.path.dirname(__file__)
         csv_file_path = os.path.join(current_dir, 'files', 'bookable_search.csv')
         self.mc_factor = pd.read_csv(csv_file_path)
+        self.image_base_url = "https://qrm-listing-images.s3.amazonaws.com/airbnb"
 
-    def get_mc_factor(self, calendar_date: str) -> float:
+    def _setup_database_connections(self) -> None:
+        self.revOS = MongoClient(os.getenv('MONGO_REVENUE_OS_URI'), socketTimeoutMS=1800000, connectTimeoutMS=1800000)
+        self.merlinHunter = MongoClient(os.getenv('MONGO_MERLIN_HUNTER_URI'), socketTimeoutMS=1800000, connectTimeoutMS=1800000)
+
+    def _query_mc_factor(self, calendar_date: str) -> float:
         date_obj = datetime.strptime(calendar_date, "%Y-%m-%d")
         query = f'Month == "{date_obj.strftime("%B")}" & Day == "{date_obj.strftime("%a")}"'
         factor = self.mc_factor.query(query)
         return factor.Bookable_Search.iloc[0]
 
-    def process_market_data(self, data: pd.DataFrame) -> pd.DataFrame:
-        processed_data = data.copy()
-        processed_data['price'] = processed_data['price'].str.replace('[$,]', '', regex=True).astype(float)
-        return processed_data
+    def _process_data(self, data: pd.DataFrame) -> pd.DataFrame:
+        data['price'] = data['price'].str.replace('[$,]', '', regex=True).astype(float)
+        return data
 
-    def calculate_metric(self, data: pd.DataFrame, choice: int, metric: str) -> pd.DataFrame:
-        processed_data = self.process_market_data(data)
-        matrix = processed_data.iloc[:, :10].values.astype(float)
-        price_model = PriceModel(market_matrix=matrix, coeff=[-0.0062, 0.0003, 0.0879, 0.1106, 0.3239, 0.015, 0.0002, 0.011, 0.42, 0.141], mc=choice)
+    def _aggregate_image_scores(self, image_set):
+        image_scores = image_set.groupby('listings')['score'].agg(list).reset_index()
+        image_scores.columns = ["id", "scores"]
+        image_scores["values"] = image_scores.apply(odd_weighted_average, axis=1)
+        image_scores[['reference', 'adjusted', 'factor']] = image_scores['values'].apply(lambda x: pd.Series(x))
+        image_scores = image_scores[["id", "scores", "reference", "adjusted"]]
+
+        return image_scores
+
+    def _get_listing_data(self, image_set):
+        image_scores = self._aggregate_image_scores(image_set)
+   
+        client_listing = pd.DataFrame(get_listing_info([self.rental_market.id], self.merlinHunter["scrapy_quibble"]["scrapy_listing"]))
+        competitor_listing = pd.DataFrame(get_listing_info(self.rental_market.competitors, self.merlinHunter["scrapy_quibble"]["scrapy_listing"]))
+
+        market_listing = pd.concat([client_listing, competitor_listing], axis=0)
+        market_listing["bedrooms"] = pd.to_numeric(market_listing["bedrooms"], errors="coerce").fillna(0).astype(int)
+        market_listing.rename(columns={'_id': 'listing_hash_id'}, inplace=True)
+        market_listing = parse_scrap_info(market_listing)
+
+        market_listing = pd.merge(market_listing, image_scores, on="id", how="outer")
+        market_listing["reference"].fillna(market_listing["reference"].mean(), inplace=True)
+        market_listing["adjusted"].fillna(market_listing["adjusted"].mean(), inplace=True)
+
+        market_availabilities = pd.DataFrame(get_availability_info(self.all_ids, [self.calendar_date], self.merlinHunter["scrapy_quibble"]["scrapy_availability"]))
+        market_listing = pd.merge(market_listing, market_availabilities, on="id", how='inner')
+        market_listing['dist'] = 0
+
+        market_listing = market_listing[[ "id", "name", "description", *self.PROPERTY_ATTRS_COLUMNS, "available", "calendar_date", "listing_hash_id"]]
+        market_listing["mc"] = market_listing["calendar_date"].apply(get_mc_factor)
+        
+        market_listing = market_listing.drop_duplicates(subset=['id'])
+        market_listing["to_optimize"] = market_listing['id'].apply(lambda x: 1 if str(x) == str(self.rental_market.id) else 0)
+        market_listing = market_listing.query('available == True or to_optimize == 1')
+        market_listing = market_listing.sort_values(by='to_optimize', ascending=False)
+
+        return market_listing
+
+    def _calculate_metric(self, data: pd.DataFrame, choice: int, metric: str) -> pd.DataFrame:
+        processed_data = self._process_data(data)
+        matrix = processed_data[self.PROPERTY_ATTRS_COLUMNS].values.astype(float)
+        price_model = PriceModel(market_matrix=matrix, coeff=self.COEFFICIENTS, mc=choice)
+
+        if metric not in ["price", "share"]:
+            raise ValueError(f"Invalid metric: {metric}")
 
         if metric == "price":
             result = price_model.optimize()
-            processed_data["Optimized_Price"] = result[1]
+            processed_data["optimized_price"] = result[1]
         elif metric == "share":
             result = price_model.compute_share()
-            processed_data["Market_Share"] = result
+            processed_data["market_share"] = result
 
         return processed_data
 
-    def build_matrix(self,listing_id: str, calendar_date: str):
-        revOS = MongoClient(os.getenv('MONGO_REVENUE_OS_URI'), socketTimeoutMS=1800000, connectTimeoutMS=1800000)
-        merlinHunter = MongoClient(os.getenv('MONGO_MERLIN_HUNTER_URI'), socketTimeoutMS=1800000, connectTimeoutMS=1800000)
-
-        client_property_data = get_property_info([listing_id], revOS['DB_quibble']['properties'])[0]
-        rental_market = ClientProperty(id = client_property_data["listing_id"],competitors = client_property_data["intelCompSet"])
-
-        all_ids = []
-        all_ids.append(client_property_data["listing_id"])
-        all_ids.extend(client_property_data["intelCompSet"])
-        all_ids = list(set(all_ids))
-
-        image_set = get_image_scores(all_ids, merlinHunter["scrapy_quibble"]["scrapy_image_scores"])
-        image_set = pd.DataFrame(image_set)
-        image_scores = image_set.groupby('Listings')['Score'].agg(list).reset_index()
-        image_scores.columns = ["id","Scores"]
-        image_scores["Values"] = image_scores.apply(odd_weighted_average, axis=1)
-        image_scores[['Reference', 'Adjusted', 'Factor']] = image_scores['Values'].apply(lambda x: pd.Series(x))
-        image_scores = image_scores[["id","Scores","Reference","Adjusted"]]
-
-        comp_list = []
-        [comp_list.append(x) for x in rental_market._competitors]
-                
-        client_listing = pd.DataFrame(get_listing_info([listing_id], merlinHunter["scrapy_quibble"]["scrapy_listing"]))
-        competitor_listing = pd.DataFrame(get_listing_info(comp_list, merlinHunter["scrapy_quibble"]["scrapy_listing"]))
-        market_listing = pd.concat([client_listing,competitor_listing],axis = 0)
-        market_listing["bedrooms"] = pd.to_numeric(market_listing["bedrooms"], errors="coerce").fillna(0).astype(int)
-        market_listing.rename(columns={'_id': 'listing_hashId'}, inplace=True)
-        market_listing = parse_scrap_info(market_listing)
-        market_listing = pd.merge(market_listing,image_scores, on="id", how = "outer")
-        market_listing["Reference"].fillna(market_listing["Reference"].mean(),inplace = True)
-        market_listing["Adjusted"].fillna(market_listing["Adjusted"].mean(),inplace = True)
-
-        market_availabilities = pd.DataFrame(get_availability_info(all_ids, [calendar_date], merlinHunter["scrapy_quibble"]["scrapy_availability"]))
-        market_listing= pd.merge(market_listing, market_availabilities, on="id", how='inner')
-        market_listing['dist'] = 0
-        
-        market_data = market_listing[["price","review_count","Adjusted","bedrooms","rating_value","minNights","dist","pool","jacuzzi","landscape_views","id","available","calendarDate","listing_hashId"]]
-        market_data["mc"] = market_data["calendarDate"].apply(get_mc_factor)
-        
-        return market_data
-
-    def optimize_price(self,listing_id: str, calendar_date: str):
-        optimized_price = None
-        market_data = self.build_matrix(listing_id,calendar_date)
-        market_data = market_data.drop_duplicates(subset = ['id'])
-        market_data["ToOptimize"] = market_data['id'].apply(lambda x: 1 if str(x) == str(listing_id) else 0)
-        market_data = market_data.query('available == True or ToOptimize == 1')
-        market_data = market_data.sort_values(by = 'ToOptimize', ascending = False)
-        to_optimize = (market_data['ToOptimize'] == 1).any()
-        num_comp = market_data.shape[0]
-        if to_optimize and num_comp > 1:
-            i = float(market_data.iloc[0]["mc"])
-            optimized_price = self.calculate_metric(market_data,i,"price")
-        
-        return optimized_price
-    
-    def compute_share(self,property_info: PropertyAttribute, calendar_date: str):
-        market_share = 0
-        listing_id = property_info._id
-
-        market_data = self.build_matrix(listing_id,calendar_date)
-        market_data = market_data.drop_duplicates(subset = ['id'])
-        market_data["ToOptimize"] = market_data['id'].apply(lambda x: 1 if str(x) == str(listing_id) else 0)
-        market_data = market_data.query('available == True or ToOptimize == 1')
-        market_data = market_data.sort_values(by = 'ToOptimize', ascending = False)
-        property_attr = instance_to_array(property_info)
-        market_data.iloc[0, 0:11] = property_attr
-        to_optimize = (market_data['ToOptimize'] == 1).any()
-        num_comp = market_data.shape[0]
+    def _compute_share(self, image_set):
+        market_share = pd.DataFrame([{
+            "id": None,
+            "name": None,
+            "description": None,
+            "price": None,
+            "review_count": None,
+            "adjusted": None,
+            "bedrooms": None,
+            "rating_value": None,
+            "min_nights": None,
+            "dist": None,
+            "pool": None,
+            "jacuzzi": None,
+            "landscape_views": None,
+            "available": None,
+            "calendar_date": None,
+            "listing_hash_id": None,
+            "mc": None,
+            "to_optimize": None,
+            "image_score": None,
+            "bedroom": None,
+            "min_stay": None,
+            "distance": None,
+            "market_share": None,
+        }])
+        market_listing_data = self._get_listing_data(image_set=image_set)
+        prop_info_dict = vars(self.property_info)
+        market_listing_data.loc[0, prop_info_dict.keys()] = prop_info_dict.values()
+        to_optimize = (market_listing_data['to_optimize'] == 1).any()
+        num_comp = market_listing_data.shape[0]
 
         if to_optimize and num_comp > 1:
-            i = float(market_data.iloc[0]["mc"])
-            market_share = self.calculate_metric(market_data,i,"share")
+            i = float(market_listing_data.iloc[0]["mc"])
+            market_share = self._calculate_metric(market_listing_data, i, "share")
 
         return market_share
+
+    def get_market_data(self):
+        image_set = get_image_scores(self.all_ids, self.merlinHunter["scrapy_quibble"]["scrapy_image_scores"])
+        image_set = pd.DataFrame(image_set)
+
+        image_set["image_url"] = self.image_base_url + "/" + image_set['listings'] + "/" + image_set['file']
+
+        market_share = self._compute_share(image_set=image_set)
+
+        return market_share, image_set
+
+    def optimize_price(self):
+        image_set = get_image_scores(self.all_ids, self.merlinHunter["scrapy_quibble"]["scrapy_image_scores"])
+        image_set = pd.DataFrame(image_set)
+
+        optimized_price = None
+        market_listing_data = self._get_listing_data(image_set=image_set)
+        to_optimize = (market_listing_data['to_optimize'] == 1).any()
+        num_comp = market_listing_data.shape[0]
+
+        if to_optimize and num_comp > 1:
+            i = float(market_listing_data.iloc[0]["mc"])
+            optimized_price = self._calculate_metric(market_listing_data, i, "price")
+
+        return optimized_price

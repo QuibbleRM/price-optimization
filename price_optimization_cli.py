@@ -99,6 +99,8 @@ market_availabilities = pd.DataFrame(get_availability_info(all_ids,calendar_date
 market_listing= pd.merge(market_listing,market_availabilities,on="id", how = 'outer')
 market_listing['dist'] = 0
 
+print(market_listing.head())
+print(email_id)
 mc_factor = pd.DataFrame(get_user_mc_factor([email_id]))
 print(mc_factor)
 mc_factor['Bookable_Search'] = mc_factor.Bookable_Search.astype(float)

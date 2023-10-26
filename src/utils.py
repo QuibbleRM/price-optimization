@@ -367,17 +367,17 @@ def push_data(optimized_pricing):
         price_collection.insert_one(optimized_pricing)
 
 
-def get_mc_factor(calendar_date: str):
+# def get_mc_factor(calendar_date: str):
     
-    mc_factor = pd.read_csv("dags/bookable_search.csv")
+#     mc_factor = pd.read_csv("dags/bookable_search.csv")
 
-    date_obj = datetime.strptime(calendar_date, "%Y-%m-%d")
-    day_of_week = date_obj.strftime("%a")
-    month = date_obj.strftime("%B")
-    q = f'Month == "{month}" & Day == "{day_of_week}"'
-    factor = mc_factor.query(q)
+#     date_obj = datetime.strptime(calendar_date, "%Y-%m-%d")
+#     day_of_week = date_obj.strftime("%a")
+#     month = date_obj.strftime("%B")
+#     q = f'Month == "{month}" & Day == "{day_of_week}"'
+#     factor = mc_factor.query(q)
     
-    return factor.Bookable_Search.iloc[0]
+#     return factor.Bookable_Search.iloc[0]
 
 
 def format_data(input_data):

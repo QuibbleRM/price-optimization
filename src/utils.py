@@ -489,36 +489,3 @@ def get_property_info_by_user(user_ids: list[ObjectId]):
     return property_list
 
 
-def get_user_mc_factor(email_ids: list[str]):
-    
-
-    mc_colllection = merlin_hunter["scrapy_quibble"]["bookable_search"]
-    
-    mc_match = {
-            "User": {"$in": email_ids},
-        } if email_ids else {}
-
-    mc_query = [
-                {
-                    "$match": mc_match
-                },
-                {
-                    "$project": {
-                        "_id": 0,
-                        "Month": "$Month",
-                        "Day": "$Day",
-                        "Bookable_Search": "$Bookable_Search",
-                        "User": "$User",
-                    }
-                }
-            ]
-    
-    mcs: Iterable[dict] = mc_colllection.aggregate(mc_query)
-
-
-    mc_list = []
-
-    for _mc in mcs:
-        mc_list.append(_mc)
-    
-    return mc_list

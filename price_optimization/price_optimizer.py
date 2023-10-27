@@ -1,4 +1,5 @@
 import os
+import re
 from .dynapee import PriceModel
 import pandas as pd
 from pymongo import MongoClient
@@ -58,7 +59,10 @@ class PriceOptimizer:
         return factor.Bookable_Search.iloc[0]
 
     def _process_data(self, data: pd.DataFrame) -> pd.DataFrame:
-        data['price'] = data['price'].str.replace('[$,]', '', regex=True).astype(float)
+        data['price'] = data['price'].apply(
+            lambda x: re.sub(r'[$,]', '', x) if isinstance(x, str) else x
+        ).astype(float)
+
         return data
 
     def _aggregate_image_scores(self, image_set):

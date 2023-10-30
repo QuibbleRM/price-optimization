@@ -202,8 +202,8 @@ def parse_scrap_info(scrap_dataframe):
     
     scrape_list_df = scrap_dataframe
     scrape_list_df["pool"] = scrape_list_df['amenities'].apply(check_patterns_occurrence, patterns=["pool"], exact = True)
-    scrape_list_df["jacuzzi"] = scrape_list_df['amenities'].apply(check_patterns_occurrence, patterns=["jacuzzi","hot tub","bathtub"])
-    scrape_list_df["landscape_views"] = scrape_list_df['amenities'].apply(check_patterns_occurrence, patterns=["lake view","lake access","nature view","lake"])
+    scrape_list_df["jacuzzi"] = scrape_list_df['amenities'].apply(check_patterns_occurrence, patterns=["jacuzzi","hot tub"]) # remove bathtube
+    scrape_list_df["landscape_views"] = scrape_list_df['amenities'].apply(check_patterns_occurrence, patterns=["lake view","lake access","nature view","lake","mountain"])
     
     return scrape_list_df
 

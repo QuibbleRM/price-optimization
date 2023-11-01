@@ -13,6 +13,44 @@ clients = {
     "MerlinHunter": "mongodb+srv://sguaro:jHdJU2TS2mckQZN2@merlinhunter.ftpuq.mongodb.net"
 }
 
+
+bag_of_words = [
+    "Mountain view",
+    "Garden view",
+    "Beach access",
+    "City skyline view",
+    "Lake access",
+    "Public or shared beach access",
+    "Beach view",
+    "Pool view",
+    "Ocean view",
+    "Beach access",
+    "Resort access",
+    "Courtyard view",
+    "Valley view",
+    "Lake view",
+    "Sea view",
+    "Bay view",
+    "Free resort access",
+    "Park view",
+    "Desert view",
+    "River view",
+    "Resort view",
+    "Public or shared beach access",
+    "Canal view",
+    "Golf course view",
+    "Marina view",
+    "Harbor view",
+    "Ski-in/Ski-out",
+    "Private beach access",
+    "lake view",
+    "lake access",
+    "nature view",
+    "lake",
+    "mountain",
+    "ocean"
+]
+
 revenue_os = MongoClient(clients["RevenueOS"], socketTimeoutMS=1800000,  
                      connectTimeoutMS=1800000) # properties
 revenue_dev = MongoClient(clients["RevenueDev"], socketTimeoutMS=1800000,  
@@ -202,8 +240,9 @@ def parse_scrap_info(scrap_dataframe):
     
     scrape_list_df = scrap_dataframe
     scrape_list_df["pool"] = scrape_list_df['amenities'].apply(check_patterns_occurrence, patterns=["pool"], exact = True)
-    scrape_list_df["jacuzzi"] = scrape_list_df['amenities'].apply(check_patterns_occurrence, patterns=["jacuzzi","hot tub"]) # remove bathtube
-    scrape_list_df["landscape_views"] = scrape_list_df['amenities'].apply(check_patterns_occurrence, patterns=["lake view","lake access","nature view","lake","mountain"])
+    scrape_list_df["jacuzzi"] = scrape_list_df['amenities'].apply(check_patterns_occurrence, patterns=["jacuzzi","hot tub"]) # remove bathtub
+    scrape_list_df["landscape_views"] = scrape_list_df['amenities'].apply(check_patterns_occurrence, patterns=bag_of_words)
+    
     
     return scrape_list_df
 
@@ -342,15 +381,15 @@ def get_image_scores(property_ids: list[str]):
 def push_report(optimized_pricing):
 
     _optimized_pricing = optimized_pricing.to_dict(orient="records") 
-    price_collection  = merlin_hunter["scrapy_quibble"]["dynamic_pricing_report_multiple"]
+    price_collection  = merlin_hunter["scrapy_quibble"]["dynamic_pricing_report"]
     price_collection.insert_many(_optimized_pricing)
     
 
 
 def push_data(optimized_pricing):
         
-    price_collection  = merlin_hunter["scrapy_quibble"]["dynamic_pricing_multipletest"]
-    #price_collection  = revenue_dev["DB_quibble"]["dynamic_pricing"]
+    #price_collection  = merlin_hunter["scrapy_quibble"]["dynamic_pricing"]
+    price_collection  = revenue_dev["DB_quibble"]["dynamic_pricing"]
 
     #_listing_id = optimized_pricing["listing_id"]
     _property_id = optimized_pricing["property_id"]
@@ -366,18 +405,6 @@ def push_data(optimized_pricing):
     else:
         price_collection.insert_one(optimized_pricing)
 
-
-# def get_mc_factor(calendar_date: str):
-    
-#     mc_factor = pd.read_csv("dags/bookable_search.csv")
-
-#     date_obj = datetime.strptime(calendar_date, "%Y-%m-%d")
-#     day_of_week = date_obj.strftime("%a")
-#     month = date_obj.strftime("%B")
-#     q = f'Month == "{month}" & Day == "{day_of_week}"'
-#     factor = mc_factor.query(q)
-    
-#     return factor.Bookable_Search.iloc[0]
 
 
 def format_data(input_data):

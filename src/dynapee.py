@@ -28,7 +28,7 @@ class PriceModel(IPriceModel):
     _index_to_optimize = 0
     _mc = 1
     
-    def __init__(self,p_GO = 1, market_matrix = None, coeff =  [-0.0062, 0.0003, 0.0672, 0.1106, 0.3239, 0.015, 0.0002, 0.011, 0.42, 0.141], index_to_optimize = 0, mc = 1):
+    def __init__(self,p_GO = 1, market_matrix = None, coeff =  [-0.0062, 0.0003, 0.0672, 0.1106, 0.3239, -0.015, 0.0002, 0.011, 0.42, 0.141], index_to_optimize = 0, mc = 1):
         
         self._p_GO = p_GO
         self._market_matrix = market_matrix

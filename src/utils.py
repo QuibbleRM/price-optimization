@@ -4,7 +4,7 @@ from pymongo import MongoClient
 from typing import Iterable, List
 import re
 import os
-from wordpool import * 
+from src.wordpool import * 
 from datetime import datetime, timedelta
 from bson import ObjectId
 

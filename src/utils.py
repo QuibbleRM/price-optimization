@@ -4,6 +4,7 @@ from pymongo import MongoClient
 from typing import Iterable, List
 import re
 import os
+from wordpool import * 
 from datetime import datetime, timedelta
 from bson import ObjectId
 
@@ -14,42 +15,7 @@ clients = {
 }
 
 
-bag_of_words = [
-    "Mountain view",
-    "Garden view",
-    "Beach access",
-    "City skyline view",
-    "Lake access",
-    "Public or shared beach access",
-    "Beach view",
-    "Pool view",
-    "Ocean view",
-    "Beach access",
-    "Resort access",
-    "Courtyard view",
-    "Valley view",
-    "Lake view",
-    "Sea view",
-    "Bay view",
-    "Free resort access",
-    "Park view",
-    "Desert view",
-    "River view",
-    "Resort view",
-    "Public or shared beach access",
-    "Canal view",
-    "Golf course view",
-    "Marina view",
-    "Harbor view",
-    "Ski-in/Ski-out",
-    "Private beach access",
-    "lake view",
-    "lake access",
-    "nature view",
-    "lake",
-    "mountain",
-    "ocean"
-]
+
 
 revenue_os = MongoClient(clients["RevenueOS"], socketTimeoutMS=1800000,  
                      connectTimeoutMS=1800000) # properties
@@ -239,8 +205,8 @@ def check_patterns_occurrence(arr, patterns, exact = False):
 def parse_scrap_info(scrap_dataframe):
     
     scrape_list_df = scrap_dataframe
-    scrape_list_df["pool"] = scrape_list_df['amenities'].apply(check_patterns_occurrence, patterns=["pool"], exact = True)
-    scrape_list_df["jacuzzi"] = scrape_list_df['amenities'].apply(check_patterns_occurrence, patterns=["jacuzzi","hot tub"]) # remove bathtub
+    scrape_list_df["pool"] = scrape_list_df['amenities'].apply(check_patterns_occurrence, patterns=pool_of_words, exact = True)
+    scrape_list_df["jacuzzi"] = scrape_list_df['amenities'].apply(check_patterns_occurrence, patterns=tub_of_words) # remove bathtub
     scrape_list_df["landscape_views"] = scrape_list_df['amenities'].apply(check_patterns_occurrence, patterns=bag_of_words)
     
     

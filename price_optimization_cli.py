@@ -17,10 +17,13 @@ arguments = sys.argv[1:]
 email_id = [arguments[0]]
 offset = int(arguments[1])
 workers = int(arguments[2])
+mode = arguments[3]
+
+if mode == None or mode == '':
+    mode = 'prod'
+
 
 user_ids = get_user_ids(email_id)
-#client_property_ids = get_property_info_by_user(user_ids)
-
 
 
 calendar_dates = []

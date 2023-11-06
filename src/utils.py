@@ -30,10 +30,12 @@ def revenueos_connect():
 def merlindb_connect():
     return MongoClient(clients["MerlinHunter"])
 
-def get_property_info(property_ids: list[str]):
+def get_property_info(property_ids: list[str], mode: str = 'prod'):
     
-
-    property_colllection = revenue_os["DB_quibble"]["properties"]
+    if mode == 'prod':
+        property_colllection = revenue_os["DB_quibble"]["properties"]
+    else:
+        property_colllection = revenue_dev["DB_quibble"]["properties"]
     
     property_match = {
             "airBnbId": {"$in": property_ids}
@@ -406,10 +408,13 @@ def format_data(input_data):
     return formatted_data
     
 
-def get_user_ids(email_ids: list[str]):
+def get_user_ids(email_ids: list[str],mode: str = 'prod'):
     
+    if mode == 'prod':
+        user_colllection = revenue_os["DB_quibble"]["users"]
+    else:
+        user_colllection = revenue_dev["DB_quibble"]["users"]
 
-    user_colllection = revenue_os["DB_quibble"]["users"]
     
     user_match = {
             "email": {"$in": email_ids}
@@ -439,10 +444,13 @@ def get_user_ids(email_ids: list[str]):
 
 from bson import ObjectId
 
-def get_property_info_by_user(user_ids: list[ObjectId]):
+def get_property_info_by_user(user_ids: list[ObjectId],mode: str = 'prod'):
     
 
-    property_colllection = revenue_os["DB_quibble"]["properties"]
+    if mode == 'prod':
+        property_colllection = revenue_os["DB_quibble"]["properties"]
+    else:
+        property_colllection = revenue_dev["DB_quibble"]["properties"]
     
     property_match = {
             "userId": {"$in": user_ids}, "active": True,

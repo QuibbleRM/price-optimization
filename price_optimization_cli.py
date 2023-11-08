@@ -23,7 +23,7 @@ if mode == None or mode == '':
     mode = 'prod'
 
 
-user_ids = get_user_ids(email_id)
+user_ids = get_user_ids(email_id,mode)
 
 
 calendar_dates = []
@@ -40,7 +40,7 @@ for date_str in date_strings:
 
 
 #client_property_data = get_property_info(client_property_ids)
-client_property_data = get_property_info_by_user(user_ids)
+client_property_data = get_property_info_by_user(user_ids,mode)
 
 
 rental_market = []

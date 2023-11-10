@@ -6,6 +6,58 @@ from scipy.stats import binom
 from scipy.stats import norm
 from .general import check_patterns_occurrence
 from pymongo.collection import Collection
+from bson import ObjectId
+
+
+def get_user_ids(email_ids: list[str],user_collection: Collection):
+    
+    user_match = {
+            "email": {"$in": email_ids}
+        } if email_ids else {}
+
+    user_query = [
+                {
+                    "$match": user_match
+                },
+                {
+                    "$project": {
+                        "_id": 1
+                    }
+                }
+            ]
+    
+
+
+    return list(user_collection.aggregate(user_query))
+
+def get_property_info_by_user(user_ids: list[ObjectId],property_colllection: Collection):
+    
+
+    property_match = {
+            "userId": {"$in": user_ids}, "active": True,
+        } if user_ids else {}
+
+    property_query = [
+                {
+                    "$match": property_match
+                },
+                {
+                    "$project": {
+                        "_id": {"$toString": "$_id"},
+                        "listing_id": "$airBnbId",
+                        "virbo_id": "$virboId",
+                        "intelCompSet": "$intelCompSet",
+                        "id": "$id",
+                        "user_id": {"$toString": "$userId"},
+                        "name": 1
+                    }
+                }
+            ]
+    
+    
+    
+    return list(property_colllection.aggregate(property_query))
+
 
 def get_image_scores(property_ids: list[str], image_scores_collection: Collection):
     score_query = [
@@ -67,7 +119,7 @@ def parse_scrap_info(scrap_dataframe: pd.DataFrame):
     
     return scrape_list_df
 
-def get_mc_factor(calendar_date: str):
+""" def get_mc_factor(calendar_date: str):
     current_dir = os.path.dirname(__file__)
     parent_dir = os.path.dirname(current_dir)
     csv_file_path = os.path.join(parent_dir, 'files', 'bookable_search.csv')
@@ -79,7 +131,31 @@ def get_mc_factor(calendar_date: str):
     q = f'Month == "{month}" & Day == "{day_of_week}"'
     factor = mc_factor.query(q)
     
-    return factor.Bookable_Search.iloc[0]
+    return factor.Bookable_Search.iloc[0] """
+
+def get_user_mc_factor(email_ids: list[str],mc_collection: Collection):
+
+    
+    mc_match = {
+            "User": {"$in": email_ids},
+        } if email_ids else {}
+
+    mc_query = [
+                {
+                    "$match": mc_match
+                },
+                {
+                    "$project": {
+                        "_id": 0,
+                        "Month": "$Month",
+                        "Day": "$Day",
+                        "Bookable_Search": "$Bookable_Search",
+                        "User": "$User",
+                    }
+                }
+            ]
+    
+    return list(mc_collection.aggregate(mc_query))
 
 def get_property_info(property_ids: list[str], properties_collection: Collection):
     property_query = [

@@ -9,7 +9,9 @@ from .utils.data import (
     get_image_scores, 
     get_listing_info, 
     parse_scrap_info, 
-    get_mc_factor, 
+    get_user_mc_factor,
+    get_user_ids,
+    get_property_info_by_user,
     get_property_info, 
     odd_weighted_average, 
     get_availability_info
@@ -33,20 +35,21 @@ class PriceOptimizer:
     def __init__(self, property_info: PropertyAttribute, calendar_date: str):
         self.property_info = property_info
         self.calendar_date = calendar_date
+        
 
         self._setup_file_paths()
         self._setup_database_connections()
 
         client_property_data = get_property_info([self.property_info.id], self.revOS['DB_quibble']['properties'])[0]
         self.rental_market = ClientProperty(id=client_property_data["listing_id"], competitors=client_property_data["intelCompSet"])
-
+        self.mc_factor_lookup = pd.DataFrame(get_user_mc_factor([self.property_info.email], self.merlinHunter["scrapy_quibble"]["bookable_search"]))
         self.all_ids = list(set([client_property_data["listing_id"]] + client_property_data["intelCompSet"]))
 
-    def _setup_file_paths(self) -> None:
-        current_dir = os.path.dirname(__file__)
-        csv_file_path = os.path.join(current_dir, 'files', 'bookable_search.csv')
-        self.mc_factor = pd.read_csv(csv_file_path)
-        self.image_base_url = "https://qrm-listing-images.s3.amazonaws.com/airbnb"
+    # def _setup_file_paths(self) -> None:
+    #     current_dir = os.path.dirname(__file__)
+    #     csv_file_path = os.path.join(current_dir, 'files', 'bookable_search.csv')
+    #     self.mc_factor = pd.read_csv(csv_file_path)
+    #     self.image_base_url = "https://qrm-listing-images.s3.amazonaws.com/airbnb"
 
     def _setup_database_connections(self) -> None:
         self.revOS = MongoClient(os.getenv('MONGO_REVENUE_OS_URI'), socketTimeoutMS=1800000, connectTimeoutMS=1800000)
@@ -55,7 +58,7 @@ class PriceOptimizer:
     def _query_mc_factor(self, calendar_date: str) -> float:
         date_obj = datetime.strptime(calendar_date, "%Y-%m-%d")
         query = f'Month == "{date_obj.strftime("%B")}" & Day == "{date_obj.strftime("%a")}"'
-        factor = self.mc_factor.query(query)
+        factor = self.mc_factor_lookup.query(query)
         return factor.Bookable_Search.iloc[0]
 
     def _process_data(self, data: pd.DataFrame) -> pd.DataFrame:
@@ -94,11 +97,11 @@ class PriceOptimizer:
         market_listing['dist'] = 0
 
         market_listing = market_listing[[ "id", "name", "description", *self.PROPERTY_ATTRS_COLUMNS, "available", "calendar_date", "listing_hash_id"]]
-        market_listing["mc"] = market_listing["calendar_date"].apply(get_mc_factor)
+        market_listing["mc"] = market_listing["calendar_date"].apply(self._query_mc_factor)
         
         market_listing = market_listing.drop_duplicates(subset=['id'])
         market_listing["to_optimize"] = market_listing['id'].apply(lambda x: 1 if str(x) == str(self.rental_market.id) else 0)
-        market_listing = market_listing.query('available == True or to_optimize == 1')
+        market_listing = market_listing.query('(price > 0 and available == True) or to_optimize == 1')
         market_listing = market_listing.sort_values(by='to_optimize', ascending=False)
 
         return market_listing

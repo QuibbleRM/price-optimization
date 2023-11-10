@@ -19,8 +19,9 @@ class PropertyAttribute:
     jacuzzi = 0
     landscape_views = 0
     id = 0
+    email = None
 
-    def __init__(self, price, review_count, image_score, bedrooms, rating_value, min_stay, distance, pool, jacuzzi, landscape_views, id):
+    def __init__(self, price, review_count, image_score, bedrooms, rating_value, min_stay, distance, pool, jacuzzi, landscape_views, id, email):
         self.price = price
         self.review_count = review_count
         self.image_score = image_score
@@ -32,6 +33,7 @@ class PropertyAttribute:
         self.jacuzzi = jacuzzi
         self.landscape_views = landscape_views
         self.id = id
+        self.email = email
         
     
 

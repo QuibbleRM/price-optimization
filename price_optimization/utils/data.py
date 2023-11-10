@@ -86,7 +86,6 @@ def get_property_info(property_ids: list[str], properties_collection: Collection
                 {
                     "$match": {
                         "airBnbId": {"$in": property_ids},
-                        'virboId': {"$exists": True},
                     }
                 },
                 {

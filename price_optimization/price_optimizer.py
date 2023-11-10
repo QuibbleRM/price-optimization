@@ -16,7 +16,7 @@ from .utils.data import (
 )
 
 class PriceOptimizer:
-    COEFFICIENTS = [-0.0062, 0.0003, 0.0879, 0.1106, 0.3239, 0.015, 0.0002, 0.011, 0.42, 0.141]
+    COEFFICIENTS = [-0.0062, 0.0003, 0.5, 0.1106, 0.3239, -0.015, 0.0002, 0.011, 0.42, 0.141]
     PROPERTY_ATTRS_COLUMNS = [
             "price",
             "review_count",

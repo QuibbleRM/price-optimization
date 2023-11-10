@@ -36,7 +36,7 @@ bag_of_words = [
 ]
 
 pool_of_words = [
-    "Indoor pool",
+"Indoor pool",
 "Indoor pool - ",
 "Indoor pool - available all year, heated",
 "Indoor pool - available all year, open specific hours - open from 8:00 AM to 9:00 PM",

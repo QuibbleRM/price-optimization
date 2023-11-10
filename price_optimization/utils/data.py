@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from scipy.stats import binom
 from scipy.stats import norm
 from .general import check_patterns_occurrence
+from .wordpool import *
 from pymongo.collection import Collection
 from bson import ObjectId
 
@@ -113,9 +114,9 @@ def get_listing_info(listing_ids: list[str], listings_collection: Collection):
 
 def parse_scrap_info(scrap_dataframe: pd.DataFrame):
     scrape_list_df = scrap_dataframe
-    scrape_list_df["pool"] = scrape_list_df['amenities'].apply(check_patterns_occurrence, patterns=["pool"], exact = True)
-    scrape_list_df["jacuzzi"] = scrape_list_df['amenities'].apply(check_patterns_occurrence, patterns=["jacuzzi","hot tub","bathtub"])
-    scrape_list_df["landscape_views"] = scrape_list_df['amenities'].apply(check_patterns_occurrence, patterns=["lake view","lake access","nature view","lake"])
+    scrape_list_df["pool"] = scrape_list_df['amenities'].apply(check_patterns_occurrence, patterns = pool_of_words, exact = True)
+    scrape_list_df["jacuzzi"] = scrape_list_df['amenities'].apply(check_patterns_occurrence, patterns = tub_of_words)
+    scrape_list_df["landscape_views"] = scrape_list_df['amenities'].apply(check_patterns_occurrence, patterns = bag_of_words)
     
     return scrape_list_df
 

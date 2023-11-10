@@ -164,7 +164,8 @@ report_date = report_date.strftime("%Y-%m-%d")
 def process_market_data(args):
     m, rm, report_date, RMid = args
     m["ToOptimize"] = (m['id'].astype(str) == str(rm._id)).astype(int)
-    m = m.query('available == True or ToOptimize == 1')
+    #m = m.query('available == True or ToOptimize == 1')
+    m = m.query('(price > 0 and available == True) or ToOptimize == 1')
     m = m.sort_values(by='ToOptimize', ascending=False)
     to_optimize = (m['ToOptimize'] == 1).any()
     num_comp = m.shape[0]
@@ -199,6 +200,7 @@ def main(rental_market, market_data, report_date):
 
 optimized_data = main(rental_market,market_data,report_date)
 optimized_pricing = pd.concat(optimized_data,axis=0, ignore_index=True)
+optimized_pricing['email'] = email_id[0]
 push_report(optimized_pricing)
 
 

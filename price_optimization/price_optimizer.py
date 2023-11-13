@@ -74,9 +74,9 @@ class PriceOptimizer:
 
         return image_scores
 
-    def _get_listing_data(self, image_set):
+    def _get_listing_data(self, image_set, market_availabilities):
         image_scores = self._aggregate_image_scores(image_set)
-   
+
         client_listing = pd.DataFrame(get_listing_info([self.rental_market.id], self.merlinHunter["scrapy_quibble"]["scrapy_listing"]))
         competitor_listing = pd.DataFrame(get_listing_info(self.rental_market.competitors, self.merlinHunter["scrapy_quibble"]["scrapy_listing"]))
 
@@ -88,8 +88,8 @@ class PriceOptimizer:
         market_listing = pd.merge(market_listing, image_scores, on="id", how="outer")
         market_listing["reference"].fillna(market_listing["reference"].mean(), inplace=True)
         market_listing["adjusted"].fillna(market_listing["adjusted"].mean(), inplace=True)
-
-        market_availabilities = pd.DataFrame(get_availability_info(self.all_ids, [self.calendar_date], self.merlinHunter["scrapy_quibble"]["scrapy_availability"]))
+        
+        market_availabilities = market_availabilities[market_availabilities['calendar_date'].apply(lambda x: isinstance(x, str))]
         market_listing = pd.merge(market_listing, market_availabilities, on="id", how='inner')
         market_listing['dist'] = 0
 
@@ -120,14 +120,14 @@ class PriceOptimizer:
 
         return processed_data
 
-    def _compute_share(self, image_set):
+    def _compute_share(self, image_set, market_availabilities):
         columns = [
             "id", "name", "description", "price", "review_count", "adjusted", "bedrooms",
             "rating_value", "min_nights", "dist", "pool", "jacuzzi", "landscape_views", 
             "available", "calendar_date", "listing_hash_id", "mc", "to_optimize"
         ]
         market_share = pd.DataFrame(columns=columns)
-        market_listing_data = self._get_listing_data(image_set=image_set)
+        market_listing_data = self._get_listing_data(image_set=image_set, market_availabilities=market_availabilities)
         prop_info_dict = vars(self.property_info)
         prop_info_dict["adjusted"] = prop_info_dict.pop("image_score")
         market_listing_data.loc[0, prop_info_dict.keys()] = prop_info_dict.values()
@@ -143,19 +143,22 @@ class PriceOptimizer:
     def get_market_data(self):
         image_set = get_image_scores(self.all_ids, self.merlinHunter["scrapy_quibble"]["scrapy_image_scores"])
         image_set = pd.DataFrame(image_set)
-
         image_set["image_url"] = self.image_base_url + "/" + image_set['listings'] + "/" + image_set['file']
 
-        market_share = self._compute_share(image_set=image_set)
+        market_availabilities = pd.DataFrame(get_availability_info(self.all_ids, [self.calendar_date], self.merlinHunter["scrapy_quibble"]["scrapy_availability"]))
 
-        return market_share, image_set
+        market_share = self._compute_share(image_set=image_set, market_availabilities=market_availabilities)
+
+        return market_share, image_set, market_availabilities
 
     def optimize_price(self):
         image_set = get_image_scores(self.all_ids, self.merlinHunter["scrapy_quibble"]["scrapy_image_scores"])
         image_set = pd.DataFrame(image_set)
 
+        market_availabilities = pd.DataFrame(get_availability_info(self.all_ids, [self.calendar_date], self.merlinHunter["scrapy_quibble"]["scrapy_availability"]))
+
         optimized_price = None
-        market_listing_data = self._get_listing_data(image_set=image_set)
+        market_listing_data = self._get_listing_data(image_set=image_set, market_availabilities=market_availabilities)
         to_optimize = (market_listing_data['to_optimize'] == 1).any()
         num_comp = market_listing_data.shape[0]
 

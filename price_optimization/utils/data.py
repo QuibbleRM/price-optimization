@@ -131,38 +131,51 @@ def odd_weighted_average(row):
     
     return (mean_score,weighted_average,abs(mean_score - weighted_average))
 
-def get_availability_info(listing_ids: list[str], calendar_date: list[str], availability_collection: Collection, lag:int = 1):
+def get_availability_info(listing_ids: list[str], calendar_date: list[str], availability_collection: Collection, lag: int = 1):
     date_yesterday = (datetime.now() - timedelta(days=lag))
    
     start_of_day = date_yesterday.replace(hour=0, minute=0, second=0)
     end_of_day = date_yesterday.replace(hour=23, minute=59, second=59)
     
     availability_match = {
-            "listing_id": {"$in": listing_ids},
-            "calendarDate": {"$in": calendar_date},
-            "minNights": {"$lt": 30},
-            "scraped_date": {
-                    "$gte": start_of_day,
-                    "$lt": end_of_day
-                }
+        "listing_id": {"$in": listing_ids},
+        "calendarDate": {"$in": calendar_date},
+        "minNights": {"$lt": 30},
+        "scraped_date": {
+            "$gte": start_of_day,
+            "$lt": end_of_day
         }
+    }
 
     availability_query = [
-                {
-                    "$match": availability_match,
-                },
-                {
-                    "$project": {
-                        "_id": 0,
-                        "id": "$listing_id",
-                        "calendar_date": "$calendarDate",
-                        "scraped_date": "$scraped_date",
-                        "available": "$available",
-                        "min_nights": "$minNights",
-                        "price": { "$ifNull" : [ "$price", 0 ] }
-                    }
-                }
+        {
+            "$match": availability_match,
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "id": "$listing_id",
+                "calendar_date": "$calendarDate",
+                "scraped_date": "$scraped_date",
+                "available": "$available",
+                "min_nights": "$minNights",
+                "price": {"$ifNull": ["$price", 0]}
+            }
+        }
+    ]
 
-            ]
+    matched_listings = list(availability_collection.aggregate(availability_query))
+    matched_listing_ids = {listing['id'] for listing in matched_listings}
+
+    for listing_id in listing_ids:
+        if listing_id not in matched_listing_ids:
+            matched_listings.append({
+                "id": listing_id,
+                "calendar_date": False,
+                "scraped_date": False,
+                "available": False,
+                "min_nights": False,
+                "price": False
+            })
         
-    return list(availability_collection.aggregate(availability_query))
+    return matched_listings

@@ -19,6 +19,14 @@ offset = int(arguments[1])
 workers = int(arguments[2])
 mode = arguments[3]
 
+print("#########################################")
+print("Run information:")
+print(f"Property to be optimized: {email_id}")
+print(f"Number of calendar days: {offset}")
+print(f"Number of workers: {workers}")
+print(f"Connection: {mode}")
+print("#########################################")
+
 if mode == None or mode == '':
     mode = 'prod'
 

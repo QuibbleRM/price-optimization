@@ -151,9 +151,9 @@ for m in rental_market:
 
 def optimize_price(dat, choice = 1):
     m = dat.copy()
-    m['price'] = m.price.astype(str)
-    m['price'] = m['price'].str.replace('$', '')
-    m['price'] = m['price'].str.replace(',', '')
+    # m['price'] = m.price.astype(str)
+    # m['price'] = m['price'].str.replace('$', '')
+    # m['price'] = m['price'].str.replace(',', '')
     mat =  m.iloc[:,:10].values.astype(float)
     dynasaur = PriceModel(market_matrix = mat, coeff = [-0.0062, 0.0003, 0.5, 0.1106, 0.3239, -0.015, 0.0002, 0.011, 0.42, 0.141], mc = choice)
     res = dynasaur.optimize()
@@ -172,6 +172,10 @@ report_date = report_date.strftime("%Y-%m-%d")
 def process_market_data(args):
     m, rm, report_date, RMid = args
     m["ToOptimize"] = (m['id'].astype(str) == str(rm._id)).astype(int)
+    m['price'] = m.price.astype(str)
+    m['price'] = m['price'].str.replace('$', '')
+    m['price'] = m['price'].str.replace(',', '')
+    m['price'] = m.price.astype(float)
     #m = m.query('available == True or ToOptimize == 1')
     m = m.query('(price > 0 and available == True) or ToOptimize == 1')
     m = m.sort_values(by='ToOptimize', ascending=False)
@@ -199,7 +203,6 @@ def main(rental_market, market_data, report_date):
 
     # Use multiprocessing to process market data in parallel
     with Pool(processes=workers) as pool:  # Adjust the number of processes based on your system's capabilities
-        print(f"Number of workers {workers}")
         optimized_data = pool.map(process_market_data, args)
 
     # Filter out None results if there's a chance process_market_data could return None

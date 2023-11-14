@@ -199,6 +199,7 @@ def main(rental_market, market_data, report_date):
 
     # Use multiprocessing to process market data in parallel
     with Pool(processes=workers) as pool:  # Adjust the number of processes based on your system's capabilities
+        print(f"Number of workers {workers}")
         optimized_data = pool.map(process_market_data, args)
 
     # Filter out None results if there's a chance process_market_data could return None

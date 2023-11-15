@@ -131,11 +131,11 @@ def odd_weighted_average(row):
     
     return (mean_score,weighted_average,abs(mean_score - weighted_average))
 
-def get_availability_info(listing_ids: list[str], calendar_date: list[str], availability_collection: Collection, lag: int = 1):
-    date_yesterday = (datetime.now() - timedelta(days=lag))
+def get_availability_info(listing_ids: list[str], calendar_date: list[str], availability_collection: Collection, lag: int = 7):
+    date_seven_days_ago = (datetime.now() - timedelta(days=lag))
    
-    start_of_day = date_yesterday.replace(hour=0, minute=0, second=0)
-    end_of_day = date_yesterday.replace(hour=23, minute=59, second=59)
+    start_of_day = date_seven_days_ago.replace(hour=0, minute=0, second=0)
+    end_of_day = datetime.now().replace(hour=23, minute=59, second=59)
     
     availability_match = {
         "listing_id": {"$in": listing_ids},
@@ -150,6 +150,18 @@ def get_availability_info(listing_ids: list[str], calendar_date: list[str], avai
     availability_query = [
         {
             "$match": availability_match,
+        },
+        {
+            "$sort": {"scraped_date": -1}  # Sort by scraped_date in descending order
+        },
+        {
+            "$group": {
+                "_id": "$listing_id",
+                "latest_scraped": {"$first": "$$ROOT"}  # Keep the first document for each group (the latest one)
+            }
+        },
+        {
+            "$replaceRoot": {"newRoot": "$latest_scraped"}
         },
         {
             "$project": {

@@ -523,3 +523,57 @@ def get_user_mc_factor(email_ids: list[str]):
         mc_list.append(_mc)
 
     return mc_list
+
+
+def get_comp_availability(listing_ids: list[str], calendar_date: list[str],lag:int = 1):
+    
+    availability_collection = merlin_hunter["scrapy_quibble"]["scrapy_availability"]
+    
+    availability_match = {
+        "listing_id": {"$in": listing_ids},
+        "calendarDate": {"$in": calendar_date},
+        "minNights": {"$lt": 30},
+        "available": True,  
+        "price": {"$exists": True, "$ne": 0}  
+    }
+
+    availability_query = [
+        {
+            "$match": availability_match
+        },
+        {
+            "$sort": {"scraped_date": -1} 
+        },
+        {
+            "$group": {
+                "_id": {"id": "$listing_id", "calendarDate": "$calendarDate"},  
+                "latest_scraped_date": {"$first": "$scraped_date"},  
+                "available": {"$first": "$available"},
+                "minNights": {"$first": "$minNights"},
+                "price": {"$first": "$price"}
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "id": "$_id.id",
+                "calendarDate": "$_id.calendarDate",
+                "scraped_date": "$latest_scraped_date",
+                "available": "$available",
+                "minNights": "$minNights",
+                "price": "$price"
+            }
+        }
+    ]
+
+    availabilities: Iterable[dict] = availability_collection.aggregate(availability_query)
+
+    available_list = []
+
+    for _avail in availabilities:
+        if not _avail.get('id'):
+            continue
+
+        available_list.append(_avail)
+
+    return available_list

@@ -106,7 +106,13 @@ market_listing["Adjusted"].fillna(market_listing["Adjusted"].mean(),inplace = Tr
 
 
 all_ids = [str(x) for x in list(market_listing.id)]
-market_availabilities = pd.DataFrame(get_availability_info(all_ids,calendar_dates))
+client_ids = [str(x) for x in list(client_listing.id)]
+comp_ids = [str(x) for x in list(competitor_listing.id)]
+
+client_availability = pd.DataFrame(get_availability_info(client_ids,calendar_dates))
+comp_availability = pd.DataFrame(get_comp_availability(comp_ids,calendar_dates))
+market_availabilities = pd.concat([client_availability,comp_availability],axis = 0)
+#market_availabilities = pd.DataFrame(get_availability_info(all_ids,calendar_dates))
 market_listing= pd.merge(market_listing,market_availabilities,on="id", how = 'outer')
 market_listing['dist'] = 0
 
@@ -175,6 +181,7 @@ def process_market_data(args):
     m['price'] = m.price.astype(str)
     m['price'] = m['price'].str.replace('$', '')
     m['price'] = m['price'].str.replace(',', '')
+    m['price'] = m['price'].str.replace('USD', '')
     m['price'] = m.price.astype(float)
     #m = m.query('available == True or ToOptimize == 1')
     m = m.query('(price > 0 and available == True) or ToOptimize == 1')

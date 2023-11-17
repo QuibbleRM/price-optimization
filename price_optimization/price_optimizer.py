@@ -123,7 +123,7 @@ class PriceOptimizer:
             result = price_model.compute_share()
             processed_data["market_share"] = result
 
-        merged_data = pd.concat([processed_data, filtered_data]
+        merged_data = pd.concat([processed_data, filtered_data])
         merged_data.loc[(merged_data['available'] != True) & (merged_data['to_optimize'] != 1), 'price'] = None
 
         return merged_data

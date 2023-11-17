@@ -58,7 +58,7 @@ class PriceOptimizer:
         factor = self.mc_factor.query(query)
         return factor.Bookable_Search.iloc[0]
 
-    def _process_data(self, data: pd.DataFrame) -> pd.DataFrame:
+    def _format_price(self, data: pd.DataFrame) -> pd.DataFrame:
         data['price'] = data['price'].apply(
             lambda x: re.sub(r'[$,]', '', x) if isinstance(x, str) else x
         ).astype(float)
@@ -89,22 +89,27 @@ class PriceOptimizer:
         market_listing["reference"].fillna(market_listing["reference"].mean(), inplace=True)
         market_listing["adjusted"].fillna(market_listing["adjusted"].mean(), inplace=True)
         
-        market_availabilities = market_availabilities[market_availabilities['calendar_date'].apply(lambda x: isinstance(x, str))]
         market_listing = pd.merge(market_listing, market_availabilities, on="id", how='inner')
         market_listing['dist'] = 0
 
         market_listing = market_listing[[ "id", "name", "description", *self.PROPERTY_ATTRS_COLUMNS, "available", "calendar_date", "listing_hash_id"]]
-        market_listing["mc"] = market_listing["calendar_date"].apply(get_mc_factor)
+        market_listing["mc"] = market_listing["calendar_date"].apply(
+            lambda x: get_mc_factor(x) if isinstance(x, str) else None
+        )
         
         market_listing = market_listing.drop_duplicates(subset=['id'])
         market_listing["to_optimize"] = market_listing['id'].apply(lambda x: 1 if str(x) == str(self.rental_market.id) else 0)
-        market_listing = market_listing.query('available == True or to_optimize == 1')
+
         market_listing = market_listing.sort_values(by='to_optimize', ascending=False)
 
         return market_listing
 
     def _calculate_metric(self, data: pd.DataFrame, choice: int, metric: str) -> pd.DataFrame:
-        processed_data = self._process_data(data)
+        processed_data = self._format_price(data)
+
+        filtered_data = processed_data[((processed_data['available'] != True) | (processed_data['price'] <= 0)) & (processed_data['to_optimize'] != 1)]
+        processed_data = processed_data.drop(filtered_data.index)
+
         matrix = processed_data[self.PROPERTY_ATTRS_COLUMNS].values.astype(float)
         price_model = PriceModel(market_matrix=matrix, coeff=self.COEFFICIENTS, mc=choice)
 
@@ -118,7 +123,10 @@ class PriceOptimizer:
             result = price_model.compute_share()
             processed_data["market_share"] = result
 
-        return processed_data
+        merged_data = pd.concat([processed_data, filtered_data]
+        merged_data.loc[(merged_data['available'] != True) & (merged_data['to_optimize'] != 1), 'price'] = None
+
+        return merged_data
 
     def _compute_share(self, image_set, market_availabilities):
         columns = [
@@ -128,9 +136,11 @@ class PriceOptimizer:
         ]
         market_share = pd.DataFrame(columns=columns)
         market_listing_data = self._get_listing_data(image_set=image_set, market_availabilities=market_availabilities)
+        
         prop_info_dict = vars(self.property_info)
         prop_info_dict["adjusted"] = prop_info_dict.pop("image_score")
         market_listing_data.loc[0, prop_info_dict.keys()] = prop_info_dict.values()
+
         to_optimize = (market_listing_data['to_optimize'] == 1).any()
         num_comp = market_listing_data.shape[0]
 

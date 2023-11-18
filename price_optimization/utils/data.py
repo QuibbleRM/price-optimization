@@ -171,7 +171,7 @@ def get_availability_info(listing_ids: list[str], calendar_date: list[str], avai
                 "scraped_date": "$scraped_date",
                 "available": "$available",
                 "min_nights": "$minNights",
-                "price": {"$ifNull": ["$price", 0]}
+                "price": {"$ifNull": ["$price", None]}
             }
         }
     ]
@@ -183,11 +183,11 @@ def get_availability_info(listing_ids: list[str], calendar_date: list[str], avai
         if listing_id not in matched_listing_ids:
             matched_listings.append({
                 "id": listing_id,
-                "calendar_date": False,
-                "scraped_date": False,
-                "available": False,
-                "min_nights": False,
-                "price": False
+                "calendar_date": None,
+                "scraped_date": None,
+                "available": None,
+                "min_nights": None,
+                "price": None
             })
         
     return matched_listings

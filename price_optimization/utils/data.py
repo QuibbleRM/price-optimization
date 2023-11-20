@@ -134,8 +134,9 @@ def odd_weighted_average(row):
 def get_availability_info(listing_ids: list[str], calendar_date: list[str], availability_collection: Collection, lag: int = 7):
     date_seven_days_ago = (datetime.now() - timedelta(days=lag))
    
-    start_of_day = date_seven_days_ago.replace(hour=0, minute=0, second=0)
-    end_of_day = datetime.now().replace(hour=23, minute=59, second=59)
+    start_of_day = date_seven_days_ago.replace(hour=0, minute=0, second=0, microsecond=0)
+    end_of_day = datetime.now().replace(hour=23, minute=59, second=59, microsecond=999999)
+
     
     availability_match = {
         "listing_id": {"$in": listing_ids},
@@ -144,7 +145,8 @@ def get_availability_info(listing_ids: list[str], calendar_date: list[str], avai
         "scraped_date": {
             "$gte": start_of_day,
             "$lt": end_of_day
-        }
+        },
+        "available": True
     }
 
     availability_query = [

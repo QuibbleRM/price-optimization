@@ -107,7 +107,11 @@ class PriceOptimizer:
     def _calculate_metric(self, data: pd.DataFrame, choice: int, metric: str) -> pd.DataFrame:
         processed_data = self._format_price(data)
 
-        filtered_data = processed_data[((processed_data['available'] != True) | (processed_data['price'] <= 0)) & (processed_data['to_optimize'] != 1)]
+        filtered_data = processed_data[
+            ((processed_data['available'] != True) | (processed_data['price'] <= 0) | processed_data['price'].isna()) &
+            (processed_data['to_optimize'] != 1)
+        ]
+
         processed_data = processed_data.drop(filtered_data.index)
 
         matrix = processed_data[self.PROPERTY_ATTRS_COLUMNS].values.astype(float)

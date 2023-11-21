@@ -17,12 +17,12 @@ clients = {
 
 
 
-revenue_os = MongoClient(clients["RevenueOS"], socketTimeoutMS=1800000,  
-                     connectTimeoutMS=1800000) # properties
-revenue_dev = MongoClient(clients["RevenueDev"], socketTimeoutMS=1800000,  
-                     connectTimeoutMS=1800000) # properties
-merlin_hunter = MongoClient(clients["MerlinHunter"], socketTimeoutMS=1800000,  
-                     connectTimeoutMS=1800000) # all properties, availability, information like bed #bedroom etc
+revenue_os = MongoClient(clients["RevenueOS"], socketTimeoutMS=72000000,  
+                     connectTimeoutMS=72000000) # properties
+revenue_dev = MongoClient(clients["RevenueDev"], socketTimeoutMS=72000000,  
+                     connectTimeoutMS=72000000) # properties
+merlin_hunter = MongoClient(clients["MerlinHunter"], socketTimeoutMS=72000000,  
+                     connectTimeoutMS=72000000) # all properties, availability, information like bed #bedroom etc
 
 def revenueos_connect():
     return MongoClient(clients["RevenueOS"])

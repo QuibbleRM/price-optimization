@@ -104,6 +104,14 @@ class PriceOptimizer:
 
         return market_listing
 
+    def sort_processed_data(self, processed_data):
+        to_optimize_row = processed_data[processed_data['to_optimize'] == 1]
+        other_rows = processed_data[processed_data['to_optimize'] != 1].sort_values('market_share', ascending=False)
+        sorted_data = pd.concat([to_optimize_row, other_rows])
+        sorted_data.reset_index(drop=True, inplace=True)
+
+        return sorted_data
+
     def _calculate_metric(self, data: pd.DataFrame, choice: int, metric: str) -> pd.DataFrame:
         processed_data = self._format_price(data)
 
@@ -129,6 +137,7 @@ class PriceOptimizer:
 
         merged_data = pd.concat([processed_data, filtered_data])
         merged_data.loc[(merged_data['available'] != True) & (merged_data['to_optimize'] != 1), 'price'] = None
+        merged_data = self.sort_processed_data(merged_data)
 
         return merged_data
 

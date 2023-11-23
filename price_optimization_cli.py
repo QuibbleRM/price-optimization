@@ -166,7 +166,7 @@ def optimize_price(dat, choice = 1):
     m["Optimized_Price"] = 0
     i = 0  
     j = "Optimized_Price"
-    m.at[i, j] = res[1]
+    m.at[i, j] = float(round(res[1],2))
     return m
 
 

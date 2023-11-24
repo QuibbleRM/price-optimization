@@ -4,6 +4,7 @@ from pymongo import MongoClient
 from typing import Iterable, List
 import re
 import os
+from src.wordpool import * 
 from datetime import datetime, timedelta
 from bson import ObjectId
 
@@ -13,12 +14,15 @@ clients = {
     "MerlinHunter": "mongodb+srv://sguaro:jHdJU2TS2mckQZN2@merlinhunter.ftpuq.mongodb.net"
 }
 
-revenue_os = MongoClient(clients["RevenueOS"], socketTimeoutMS=1800000,  
-                     connectTimeoutMS=1800000) # properties
-revenue_dev = MongoClient(clients["RevenueDev"], socketTimeoutMS=1800000,  
-                     connectTimeoutMS=1800000) # properties
-merlin_hunter = MongoClient(clients["MerlinHunter"], socketTimeoutMS=1800000,  
-                     connectTimeoutMS=1800000) # all properties, availability, information like bed #bedroom etc
+
+
+
+revenue_os = MongoClient(clients["RevenueOS"], socketTimeoutMS=72000000,  
+                     connectTimeoutMS=72000000) # properties
+revenue_dev = MongoClient(clients["RevenueDev"], socketTimeoutMS=72000000,  
+                     connectTimeoutMS=72000000) # properties
+merlin_hunter = MongoClient(clients["MerlinHunter"], socketTimeoutMS=72000000,  
+                     connectTimeoutMS=72000000) # all properties, availability, information like bed #bedroom etc
 
 def revenueos_connect():
     return MongoClient(clients["RevenueOS"])
@@ -26,10 +30,12 @@ def revenueos_connect():
 def merlindb_connect():
     return MongoClient(clients["MerlinHunter"])
 
-def get_property_info(property_ids: list[str]):
+def get_property_info(property_ids: list[str], mode: str = 'prod'):
     
-
-    property_colllection = revenue_os["DB_quibble"]["properties"]
+    if mode == 'prod':
+        property_colllection = revenue_os["DB_quibble"]["properties"]
+    else:
+        property_colllection = revenue_dev["DB_quibble"]["properties"]
     
     property_match = {
             "airBnbId": {"$in": property_ids}
@@ -123,15 +129,9 @@ def get_listing_info(listing_ids: list[str]):
     return scrapy_list
 
 
-def get_availability_info(listing_ids: list[str], calendar_date: list[str]):
+def get_availability_info(listing_ids: list[str], calendar_date: list[str],lag:int = 1):
     
-    """"
-    start_date = datetime.strptime("2023-09-17", "%Y-%m-%d") 
-    start_of_day = start_date.replace(hour=0, minute=0, second=0)
-    end_of_day = start_date.replace(hour=23, minute=59, second=59)
-    """
-    
-    date_yesterday = (datetime.now() - timedelta(days=1))
+    date_yesterday = (datetime.now() - timedelta(days=lag))
    
     start_of_day = date_yesterday.replace(hour=0, minute=0, second=0)
     end_of_day = date_yesterday.replace(hour=23, minute=59, second=59)
@@ -141,13 +141,11 @@ def get_availability_info(listing_ids: list[str], calendar_date: list[str]):
             "listing_id": {"$in": listing_ids},
             "calendarDate": {"$in": calendar_date},
             "minNights": {"$lt": 30},
-            "available": True,
             "scraped_date": {
                     "$gte": start_of_day,
                     "$lt": end_of_day
-                },
-            "price": {"$exists": True} if listing_ids else 0
-            #"price": {"$exists": True} if listing_ids else None
+                }
+
         }
 
   
@@ -163,53 +161,13 @@ def get_availability_info(listing_ids: list[str], calendar_date: list[str]):
                         "scraped_date": "$scraped_date",
                         "available": "$available",
                         "minNights": "$minNights",
-                        "price": "$price"
+                        "price": { "$ifNull" : [ "$price", 0 ] }
                     }
                 }
 
             ]
     
-    """
-    availability_query = [
-                {
-                    "$match": availability_match
-                },
-                {
-                    "$addFields": {
-                        "price": {
-                            "$cond": {
-                                "if": {"$eq": ["$price", False]},
-                                "then": 0,
-                                "else": "$price"
-                            }
-                        }
-                    }
-                },
-                
-                {
-                    "$group": {
-                        "_id": "$listing_id",
-                        "latest_scraped_date": {"$max": "$scraped_date"},
-                        "data": {"$first": "$$ROOT"}
-                    }
-                },
-
-                {
-                    "$project": {
-                        "_id": 0,
-                        "id": "$_id",
-                        "calendarDate": "$data.calendarDate",
-                        "scraped_date": "$latest_scraped_date",
-                        "available": "$data.available",
-                        "minNights": "$data.minNights",
-                        "price": "$data.price"
-                    }
-                }
-
-            ]
-    """
     availabilities: Iterable[dict] = availability_collection.aggregate(availability_query)
-
 
     available_list = []
     
@@ -249,9 +207,10 @@ def check_patterns_occurrence(arr, patterns, exact = False):
 def parse_scrap_info(scrap_dataframe):
     
     scrape_list_df = scrap_dataframe
-    scrape_list_df["pool"] = scrape_list_df['amenities'].apply(check_patterns_occurrence, patterns=["pool"], exact = True)
-    scrape_list_df["jacuzzi"] = scrape_list_df['amenities'].apply(check_patterns_occurrence, patterns=["jacuzzi","hot tub","bathtub"])
-    scrape_list_df["landscape_views"] = scrape_list_df['amenities'].apply(check_patterns_occurrence, patterns=["lake view","lake access","nature view","lake"])
+    scrape_list_df["pool"] = scrape_list_df['amenities'].apply(check_patterns_occurrence, patterns=pool_of_words, exact = True)
+    scrape_list_df["jacuzzi"] = scrape_list_df['amenities'].apply(check_patterns_occurrence, patterns=tub_of_words) # remove bathtub
+    scrape_list_df["landscape_views"] = scrape_list_df['amenities'].apply(check_patterns_occurrence, patterns=bag_of_words)
+    
     
     return scrape_list_df
 
@@ -397,7 +356,7 @@ def push_report(optimized_pricing):
 
 def push_data(optimized_pricing):
         
-    #price_collection  = merlin_hunter["scrapy_quibble"]["dynamic_pricing_test"]
+    #price_collection  = merlin_hunter["scrapy_quibble"]["dynamic_pricing"]
     price_collection  = revenue_dev["DB_quibble"]["dynamic_pricing"]
 
     #_listing_id = optimized_pricing["listing_id"]
@@ -414,18 +373,6 @@ def push_data(optimized_pricing):
     else:
         price_collection.insert_one(optimized_pricing)
 
-
-def get_mc_factor(calendar_date: str):
-    
-    mc_factor = pd.read_csv("dags/bookable_search.csv")
-
-    date_obj = datetime.strptime(calendar_date, "%Y-%m-%d")
-    day_of_week = date_obj.strftime("%a")
-    month = date_obj.strftime("%B")
-    q = f'Month == "{month}" & Day == "{day_of_week}"'
-    factor = mc_factor.query(q)
-    
-    return factor.Bookable_Search.iloc[0]
 
 
 def format_data(input_data):
@@ -445,7 +392,7 @@ def format_data(input_data):
                     )
                 },
                 'price': {
-                    d: p
+                    d: float(p)
                     for d, p in zip(
                         extracted_data['calendarDate'],
                         extracted_data['price']
@@ -460,3 +407,173 @@ def format_data(input_data):
     }
     return formatted_data
     
+
+def get_user_ids(email_ids: list[str],mode: str = 'prod'):
+    
+    if mode == 'prod':
+        user_colllection = revenue_os["DB_quibble"]["users"]
+    else:
+        user_colllection = revenue_dev["DB_quibble"]["users"]
+
+    
+    user_match = {
+            "email": {"$in": email_ids}
+        } if email_ids else {}
+
+    user_query = [
+                {
+                    "$match": user_match
+                },
+                {
+                    "$project": {
+                        "_id": 1
+                    }
+                }
+            ]
+    
+    users: Iterable[dict] = user_colllection.aggregate(user_query)
+
+
+    user_list = []
+
+    for _user in users:
+        
+        user_list.append(_user.get('_id'))
+
+    return user_list
+
+from bson import ObjectId
+
+def get_property_info_by_user(user_ids: list[ObjectId],mode: str = 'prod'):
+    
+
+    if mode == 'prod':
+        property_colllection = revenue_os["DB_quibble"]["properties"]
+    else:
+        property_colllection = revenue_dev["DB_quibble"]["properties"]
+    
+    property_match = {
+            "userId": {"$in": user_ids}, "active": True,
+        } if user_ids else {}
+
+    property_query = [
+                {
+                    "$match": property_match
+                },
+                {
+                    "$project": {
+                        "_id": {"$toString": "$_id"},
+                        "listing_id": "$airBnbId",
+                        "virbo_id": "$virboId",
+                        "intelCompSet": "$intelCompSet",
+                        "id": "$id",
+                        "user_id": {"$toString": "$userId"},
+                        "name": 1
+                    }
+                }
+            ]
+    
+    properties: Iterable[dict] = property_colllection.aggregate(property_query)
+
+
+    property_list = []
+
+    for _property in properties:
+
+        if not _property.get('listing_id'):
+            if not _property.get('virbo_id'):
+                continue
+            continue
+
+        property_list.append(_property)
+    
+    return property_list
+
+
+def get_user_mc_factor(email_ids: list[str]):
+    
+
+    mc_colllection = merlin_hunter["scrapy_quibble"]["bookable_search"]
+    
+    mc_match = {
+            "User": {"$in": email_ids},
+        } if email_ids else {}
+
+    mc_query = [
+                {
+                    "$match": mc_match
+                },
+                {
+                    "$project": {
+                        "_id": 0,
+                        "Month": "$Month",
+                        "Day": "$Day",
+                        "Bookable_Search": "$Bookable_Search",
+                        "User": "$User",
+                    }
+                }
+            ]
+    
+    mcs: Iterable[dict] = mc_colllection.aggregate(mc_query)
+
+    
+    mc_list = []
+
+    for _mc in mcs:
+        mc_list.append(_mc)
+
+    return mc_list
+
+
+def get_comp_availability(listing_ids: list[str], calendar_date: list[str],lag:int = 1):
+    
+    availability_collection = merlin_hunter["scrapy_quibble"]["scrapy_availability"]
+    
+    availability_match = {
+        "listing_id": {"$in": listing_ids},
+        "calendarDate": {"$in": calendar_date},
+        "minNights": {"$lt": 30},
+        "available": True,  
+        "price": {"$exists": True, "$ne": 0}  
+    }
+
+    availability_query = [
+        {
+            "$match": availability_match
+        },
+        {
+            "$sort": {"scraped_date": -1} 
+        },
+        {
+            "$group": {
+                "_id": {"id": "$listing_id", "calendarDate": "$calendarDate"},  
+                "latest_scraped_date": {"$first": "$scraped_date"},  
+                "available": {"$first": "$available"},
+                "minNights": {"$first": "$minNights"},
+                "price": {"$first": "$price"}
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "id": "$_id.id",
+                "calendarDate": "$_id.calendarDate",
+                "scraped_date": "$latest_scraped_date",
+                "available": "$available",
+                "minNights": "$minNights",
+                "price": "$price"
+            }
+        }
+    ]
+
+    availabilities: Iterable[dict] = availability_collection.aggregate(availability_query)
+
+    available_list = []
+
+    for _avail in availabilities:
+        if not _avail.get('id'):
+            continue
+
+        available_list.append(_avail)
+
+    return available_list

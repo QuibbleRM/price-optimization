@@ -15,6 +15,10 @@ class IPriceModel(abc.ABC):
     def optimize():
         pass
 
+    @abc.abstractclassmethod
+    def compute_share():
+        pass
+
     
 class PriceModel(IPriceModel):
 
@@ -24,7 +28,7 @@ class PriceModel(IPriceModel):
     _index_to_optimize = 0
     _mc = 1
     
-    def __init__(self,p_GO = 1, market_matrix = None, coeff =  [-0.0062, 0.0003, 0.0672, 0.1106, 0.3239, 0.015, 0.0002, 0.011, 0.42, 0.141], index_to_optimize = 0, mc = 1):
+    def __init__(self,p_GO = 1, market_matrix = None, coeff =  [-0.0062, 0.0003, 0.0672, 0.1106, 0.3239, -0.015, 0.0002, 0.011, 0.42, 0.141], index_to_optimize = 0, mc = 1):
         
         self._p_GO = p_GO
         self._market_matrix = market_matrix
@@ -64,7 +68,17 @@ class PriceModel(IPriceModel):
         return (-result.fun,result.x)
 
 
+    def compute_share(self,index_to_optimize = 0):
+        
+        house_attributes = self._market_matrix
+        attr_coeff = self._coeff
+        result = np.array(house_attributes) * np.array(attr_coeff)
+        util = np.sum(result, axis=1)
+        exp_util = np.exp(util)
+        total_util = np.sum(exp_util)
+        normalized_util = exp_util/total_util
 
+        return normalized_util
 
 
 

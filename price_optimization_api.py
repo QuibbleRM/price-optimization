@@ -94,7 +94,7 @@ class PriceAPI(IPriceAPI):
 
     
         market_share = 0
-        listing_id = property_info._id
+        listing_id = property_info.id
 
         market_data = self.build_matrix(listing_id,calendar_date)
         market_data = market_data.drop_duplicates(subset = ['id'])
@@ -135,7 +135,7 @@ class PriceAPI(IPriceAPI):
 
 
         comp_list = []
-        [comp_list.append(x) for x in rental_market._competitors]
+        [comp_list.append(x) for x in rental_market.competitors]
                 
 
         client_listing = pd.DataFrame(get_listing_info([listing_id]))

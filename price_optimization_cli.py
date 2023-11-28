@@ -12,6 +12,9 @@ from datetime import datetime, timedelta
 from multiprocessing import Pool
 import sys
 
+
+MODE_DEFAULT = 'prod'
+
 arguments = sys.argv[1:] 
 
 email_id = [arguments[0]]
@@ -186,6 +189,7 @@ def process_market_data(args):
     #m = m.query('available == True or ToOptimize == 1')
     m = m.query('(price > 0 and available == True) or ToOptimize == 1')
     m = m.sort_values(by='ToOptimize', ascending=False)
+    m = m.head(11)
     to_optimize = (m['ToOptimize'] == 1).any()
     num_comp = m.shape[0]
     if to_optimize and num_comp > 1:

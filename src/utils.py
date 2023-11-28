@@ -1,39 +1,46 @@
+import re
+import logging
+import os
 import pandas as pd
 import numpy as np
+
+from dotenv import load_dotenv
 from pymongo import MongoClient
 from typing import Iterable, List
-import re
-import os
-from src.wordpool import * 
 from datetime import datetime, timedelta
 from bson import ObjectId
-
-clients = {
-    "RevenueOS" : "mongodb+srv://qdev:ZHvklbN0wwakG396@qrm-production.ftpuq.mongodb.net",
-    "RevenueDev" : "mongodb+srv://qdev:ZHvklbN0wwakG396@qrm-development.ftpuq.mongodb.net",
-    "MerlinHunter": "mongodb+srv://sguaro:jHdJU2TS2mckQZN2@merlinhunter.ftpuq.mongodb.net"
-}
+from contextlib import contextmanager
+from src.wordpool import * 
 
 
+logging.basicConfig(level=logging.INFO)
+load_dotenv()
 
 
-revenue_os = MongoClient(clients["RevenueOS"], socketTimeoutMS=72000000,  
-                     connectTimeoutMS=72000000) # properties
-revenue_dev = MongoClient(clients["RevenueDev"], socketTimeoutMS=72000000,  
-                     connectTimeoutMS=72000000) # properties
-merlin_hunter = MongoClient(clients["MerlinHunter"], socketTimeoutMS=72000000,  
-                     connectTimeoutMS=72000000) # all properties, availability, information like bed #bedroom etc
+TIMEOUT_MINUTES_DEFAULT = 120
+REVENUE_PROD_URI = os.getenv('REVENUE_OS_URI')
+REVENUE_DEV_URI = os.getenv('REVENUE_DEV_URI')
+MERLIN_HUNTER_URI = os.getenv('MERLIN_HUNTER_URI')
+MONGO_CONNECTION_TIMEOUT_MINUTES = int(os.getenv('MONGO_CONNECTION_TIMEOUT_MINUTES', TIMEOUT_MINUTES_DEFAULT))
 
-def revenueos_connect():
-    return MongoClient(clients["RevenueOS"])
 
-def merlindb_connect():
-    return MongoClient(clients["MerlinHunter"])
+timeout_ms = MONGO_CONNECTION_TIMEOUT_MINUTES * 60 * 1000
+
+revenue_prod = MongoClient(REVENUE_PROD_URI, socketTimeoutMS = timeout_ms,  
+                     connectTimeoutMS = timeout_ms) 
+revenue_dev = MongoClient(REVENUE_DEV_URI, socketTimeoutMS = timeout_ms,  
+                     connectTimeoutMS = timeout_ms) 
+merlin_hunter = MongoClient(MERLIN_HUNTER_URI, socketTimeoutMS = timeout_ms,  
+                     connectTimeoutMS  =timeout_ms) 
+
+
+
+
 
 def get_property_info(property_ids: list[str], mode: str = 'prod'):
     
     if mode == 'prod':
-        property_colllection = revenue_os["DB_quibble"]["properties"]
+        property_colllection = revenue_prod["DB_quibble"]["properties"]
     else:
         property_colllection = revenue_dev["DB_quibble"]["properties"]
     
@@ -192,6 +199,7 @@ def check_pattern_occurrence(arr,pattern):
 
 
 def check_patterns_occurrence(arr, patterns, exact = False):
+    
     for pattern in patterns:
         pattern_regex = re.compile(pattern, re.IGNORECASE)
         for item in arr:
@@ -411,7 +419,7 @@ def format_data(input_data):
 def get_user_ids(email_ids: list[str],mode: str = 'prod'):
     
     if mode == 'prod':
-        user_colllection = revenue_os["DB_quibble"]["users"]
+        user_colllection = revenue_prod["DB_quibble"]["users"]
     else:
         user_colllection = revenue_dev["DB_quibble"]["users"]
 
@@ -446,9 +454,9 @@ from bson import ObjectId
 
 def get_property_info_by_user(user_ids: list[ObjectId],mode: str = 'prod'):
     
-
+    
     if mode == 'prod':
-        property_colllection = revenue_os["DB_quibble"]["properties"]
+        property_colllection = revenue_prod["DB_quibble"]["properties"]
     else:
         property_colllection = revenue_dev["DB_quibble"]["properties"]
     

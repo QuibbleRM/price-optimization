@@ -152,7 +152,9 @@ class PriceOptimizer:
         
         prop_info_dict = vars(self.property_info)
         prop_info_dict["adjusted"] = prop_info_dict.pop("image_score")
-        market_listing_data.loc[0, prop_info_dict.keys()] = prop_info_dict.values()
+        for key, value in prop_info_dict.items():
+            if value is not None:
+                market_listing_data.loc[0, key] = value
 
         to_optimize = (market_listing_data['to_optimize'] == 1).any()
         num_comp = market_listing_data.shape[0]

@@ -56,9 +56,13 @@ client_property_data = get_property_info_by_user(user_ids,mode)
 
 rental_market = []
 comp_distr = []
+max_length = 10
 for p_dat in client_property_data:
-    comp_distr.append(len(p_dat["intelCompSet"]))
-    rental_market.append(ClientProperty(id = p_dat["listing_id"],competitors = p_dat["intelCompSet"]))
+    if len(p_dat["intelCompSet"]) > max_length:
+        subset_intelCompSet = p_dat["intelCompSet"][:max_length]
+    else:
+        subset_intelCompSet = p_dat["intelCompSet"]
+    rental_market.append(ClientProperty(id = p_dat["listing_id"],competitors = subset_intelCompSet))
 
 
 for_image_scoring = []

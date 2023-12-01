@@ -185,7 +185,7 @@ def optimize_price(dat, choice = 1):
     mat =  m.iloc[:,:10].values.astype(float)
     dynasaur = PriceModel(market_matrix = mat, coeff = [-0.0062, 0.0003, 0.5, 0.1106, 0.3239, -0.015, 0.0002, 0.011, 0.42, 0.141], mc = choice)
     res = dynasaur.optimize()
-    m["Optimized_Price"] = 0
+    m["Optimized_Price"] = 0.0
     i = 0  
     j = "Optimized_Price"
     m.at[i, j] = float(round(res[1],2))

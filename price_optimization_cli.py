@@ -117,7 +117,22 @@ client_ids = [str(x) for x in list(client_listing.id)]
 comp_ids = [str(x) for x in list(competitor_listing.id)]
 
 client_availability = pd.DataFrame(get_availability_info(client_ids,calendar_dates))
-comp_availability = pd.DataFrame(get_comp_availability(comp_ids,calendar_dates))
+
+batch_size = 100
+skip = 0
+
+comp_availability_batch = []
+while True:
+    #comp_availability = pd.DataFrame(get_comp_availability(comp_ids,calendar_dates))
+    comp_availability_batch.append(pd.DataFrame(get_comp_availability(comp_ids, calendar_dates, skip, batch_size)))
+
+    if len(comp_availability_batch) < batch_size:
+        break
+
+    
+    skip+=batch_size
+
+comp_availability = pd.concat(comp_availability_batch,ignore_index=True)
 market_availabilities = pd.concat([client_availability,comp_availability],axis = 0)
 #market_availabilities = pd.DataFrame(get_availability_info(all_ids,calendar_dates))
 market_listing= pd.merge(market_listing,market_availabilities,on="id", how = 'outer')

@@ -533,7 +533,7 @@ def get_user_mc_factor(email_ids: list[str]):
     return mc_list
 
 
-def get_comp_availability(listing_ids: list[str], calendar_date: list[str],lag:int = 1):
+def get_comp_availability(listing_ids: list[str], calendar_date: list[str],lag:int = 1, skip: int = 0,limit: int = 20 ) :
     
     availability_collection = merlin_hunter["scrapy_quibble"]["scrapy_availability"]
     
@@ -571,6 +571,12 @@ def get_comp_availability(listing_ids: list[str], calendar_date: list[str],lag:i
                 "minNights": "$minNights",
                 "price": "$price"
             }
+        },
+        {
+            "$skip": skip
+        },
+        {
+            "$limit": limit
         }
     ]
 

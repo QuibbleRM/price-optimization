@@ -97,8 +97,8 @@ market_listing_collection = []
 
 market_listing_daily = {}
 _compList = []
-_ids = [rental._id for rental in rental_market]
-_comp = [rental._competitors for rental in rental_market]
+_ids = [rental.id for rental in rental_market]
+_comp = [rental.competitors for rental in rental_market]
 [_compList.extend(x) for x in _comp]
         
 
@@ -166,8 +166,8 @@ def get_mc_factor(calendar_date: str):
 market_data = []
 for m in rental_market:
     tmp_ids = None
-    tmp_ids = m._competitors.copy()
-    tmp_ids.append(m._id)
+    tmp_ids = m.competitors.copy()
+    tmp_ids.append(m.id)
     
     tmp = market_listing[market_listing.id.isin(tmp_ids)]
     for d in calendar_dates: 

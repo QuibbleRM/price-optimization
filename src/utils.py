@@ -18,10 +18,11 @@ load_dotenv()
 
 
 TIMEOUT_MINUTES_DEFAULT = 120
-REVENUE_PROD_URI = os.getenv('REVENUE_OS_URI')
+REVENUE_PROD_URI = os.getenv('REVENUE_PROD_URI')
 REVENUE_DEV_URI = os.getenv('REVENUE_DEV_URI')
 MERLIN_HUNTER_URI = os.getenv('MERLIN_HUNTER_URI')
 MONGO_CONNECTION_TIMEOUT_MINUTES = int(os.getenv('MONGO_CONNECTION_TIMEOUT_MINUTES', TIMEOUT_MINUTES_DEFAULT))
+
 
 
 timeout_ms = MONGO_CONNECTION_TIMEOUT_MINUTES * 60 * 1000
@@ -418,6 +419,7 @@ def format_data(input_data):
 
 def get_user_ids(email_ids: list[str],mode: str = 'prod'):
     
+    print(REVENUE_PROD_URI)
     if mode == 'prod':
         user_colllection = revenue_prod["DB_quibble"]["users"]
     else:

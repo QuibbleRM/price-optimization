@@ -12,6 +12,9 @@ from datetime import datetime, timedelta
 from multiprocessing import Pool
 import sys
 
+
+MODE_DEFAULT = 'prod'
+
 arguments = sys.argv[1:] 
 
 email_id = [arguments[0]]
@@ -53,9 +56,13 @@ client_property_data = get_property_info_by_user(user_ids,mode)
 
 rental_market = []
 comp_distr = []
+max_length = 10
 for p_dat in client_property_data:
-    comp_distr.append(len(p_dat["intelCompSet"]))
-    rental_market.append(ClientProperty(id = p_dat["listing_id"],competitors = p_dat["intelCompSet"]))
+    if len(p_dat["intelCompSet"]) > max_length:
+        subset_intelCompSet = p_dat["intelCompSet"][:max_length]
+    else:
+        subset_intelCompSet = p_dat["intelCompSet"]
+    rental_market.append(ClientProperty(id = p_dat["listing_id"],competitors = subset_intelCompSet))
 
 
 for_image_scoring = []
@@ -110,7 +117,22 @@ client_ids = [str(x) for x in list(client_listing.id)]
 comp_ids = [str(x) for x in list(competitor_listing.id)]
 
 client_availability = pd.DataFrame(get_availability_info(client_ids,calendar_dates))
-comp_availability = pd.DataFrame(get_comp_availability(comp_ids,calendar_dates))
+
+batch_size = 100
+skip = 0
+
+comp_availability_batch = []
+while True:
+    #comp_availability = pd.DataFrame(get_comp_availability(comp_ids,calendar_dates))
+    comp_availability_batch.append(pd.DataFrame(get_comp_availability(comp_ids, calendar_dates, skip, batch_size)))
+
+    if len(comp_availability_batch) < batch_size:
+        break
+
+    
+    skip+=batch_size
+
+comp_availability = pd.concat(comp_availability_batch,ignore_index=True)
 market_availabilities = pd.concat([client_availability,comp_availability],axis = 0)
 #market_availabilities = pd.DataFrame(get_availability_info(all_ids,calendar_dates))
 market_listing= pd.merge(market_listing,market_availabilities,on="id", how = 'outer')
@@ -163,7 +185,7 @@ def optimize_price(dat, choice = 1):
     mat =  m.iloc[:,:10].values.astype(float)
     dynasaur = PriceModel(market_matrix = mat, coeff = [-0.0062, 0.0003, 0.5, 0.1106, 0.3239, -0.015, 0.0002, 0.011, 0.42, 0.141], mc = choice)
     res = dynasaur.optimize()
-    m["Optimized_Price"] = 0
+    m["Optimized_Price"] = 0.0
     i = 0  
     j = "Optimized_Price"
     m.at[i, j] = float(round(res[1],2))
@@ -186,6 +208,7 @@ def process_market_data(args):
     #m = m.query('available == True or ToOptimize == 1')
     m = m.query('(price > 0 and available == True) or ToOptimize == 1')
     m = m.sort_values(by='ToOptimize', ascending=False)
+    #m = m.head(11)
     to_optimize = (m['ToOptimize'] == 1).any()
     num_comp = m.shape[0]
     if to_optimize and num_comp > 1:

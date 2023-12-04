@@ -200,7 +200,7 @@ report_date = report_date.strftime("%Y-%m-%d")
 
 def process_market_data(args):
     m, rm, report_date, RMid = args
-    m["ToOptimize"] = (m['id'].astype(str) == str(rm._id)).astype(int)
+    m["ToOptimize"] = (m['id'].astype(str) == str(rm.id)).astype(int)
     m['price'] = m.price.astype(str)
     m['price'] = m['price'].str.replace('$', '')
     m['price'] = m['price'].str.replace(',', '')

@@ -119,7 +119,7 @@ comp_ids = [str(x) for x in list(competitor_listing.id)]
 
 client_availability = pd.DataFrame(get_availability_info(client_ids,calendar_dates))
 
-batch_size = 100
+batch_size = 1990
 skip = 0
 
 comp_availability_batch = []

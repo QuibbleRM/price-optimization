@@ -552,28 +552,63 @@ def get_comp_availability(listing_ids: list[str], calendar_date: list[str],lag:i
             "$match": availability_match
         },
         {
-            "$sort": {"scraped_date": -1} 
-        },
-        {
-            "$group": {
-                "_id": {"id": "$listing_id", "calendarDate": "$calendarDate"},  
-                "latest_scraped_date": {"$first": "$scraped_date"},  
-                "available": {"$first": "$available"},
-                "minNights": {"$first": "$minNights"},
-                "price": {"$first": "$price"}
+            '$addFields': {
+                'price': {
+                    '$cond': {
+                        'if': {
+                            '$eq': [
+                                '$price', False
+                            ]
+                        }, 
+                        'then': 0, 
+                        'else': '$price'
+                    }
+                }
             }
-        },
-        {
-            "$project": {
-                "_id": 0,
-                "id": "$_id.id",
-                "calendarDate": "$_id.calendarDate",
-                "scraped_date": "$latest_scraped_date",
-                "available": "$available",
-                "minNights": "$minNights",
-                "price": "$price"
-            }
-        },
+        }, {
+                '$group': {
+                    '_id': '$listing_id', 
+                    'latest_scraped_date': {
+                        '$max': '$scraped_date'
+                    }, 
+                    'data': {
+                        '$first': '$$ROOT'
+                    }
+                }
+            }, {
+                '$project': {
+                    '_id': 0, 
+                    'id': '$_id', 
+                    'calendarDate': '$data.calendarDate', 
+                    'scraped_date': '$latest_scraped_date', 
+                    'available': '$data.available', 
+                    'minNights': '$data.minNights', 
+                    'price': '$data.price'
+                }
+            },
+        # {
+        #     "$sort": {"scraped_date": -1} 
+        # },
+        # {
+        #     "$group": {
+        #         "_id": {"id": "$listing_id", "calendarDate": "$calendarDate"},  
+        #         "latest_scraped_date": {"$first": "$scraped_date"},  
+        #         "available": {"$first": "$available"},
+        #         "minNights": {"$first": "$minNights"},
+        #         "price": {"$first": "$price"}
+        #     }
+        # },
+        # {
+        #     "$project": {
+        #         "_id": 0,
+        #         "id": "$_id.id",
+        #         "calendarDate": "$_id.calendarDate",
+        #         "scraped_date": "$latest_scraped_date",
+        #         "available": "$available",
+        #         "minNights": "$minNights",
+        #         "price": "$price"
+        #     }
+        # },
         {
             "$skip": skip
         },

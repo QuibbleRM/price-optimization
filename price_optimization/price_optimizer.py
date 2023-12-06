@@ -30,10 +30,11 @@ class PriceOptimizer:
             "landscape_views"
         ]
 
-    def __init__(self, property_info: PropertyAttribute, calendar_date: str):
+    def __init__(self, property_info: PropertyAttribute, calendar_date: str, image_size: str = None):
         self.property_info = property_info
         self.calendar_date = calendar_date
-
+        self.image_size = image_size
+        
         self._setup_file_paths()
         self._setup_database_connections()
 
@@ -42,11 +43,12 @@ class PriceOptimizer:
 
         self.all_ids = list(set([client_property_data["listing_id"]] + client_property_data["intelCompSet"]))
 
+
     def _setup_file_paths(self) -> None:
         current_dir = os.path.dirname(__file__)
         csv_file_path = os.path.join(current_dir, 'files', 'bookable_search.csv')
         self.mc_factor = pd.read_csv(csv_file_path)
-        self.image_base_url = "https://qrm-listing-images.s3.amazonaws.com/airbnb"
+        self.image_base_url = "http://qrm-listing-images.s3-website-us-east-1.amazonaws.com/airbnb" if self.image_size else "https://qrm-listing-images.s3.amazonaws.com/airbnb"
 
     def _setup_database_connections(self) -> None:
         self.revOS = MongoClient(os.getenv('MONGO_REVENUE_OS_URI'), socketTimeoutMS=1800000, connectTimeoutMS=1800000)
@@ -168,7 +170,11 @@ class PriceOptimizer:
     def get_market_data(self):
         image_set = get_image_scores(self.all_ids, self.merlinHunter["scrapy_quibble"]["scrapy_image_scores"])
         image_set = pd.DataFrame(image_set)
-        image_set["image_url"] = self.image_base_url + "/" + image_set['listings'] + "/" + image_set['file']
+        
+        if self.image_size:
+            image_set["image_url"] = self.image_base_url + "/" + image_set['listings'] + "/" + self.image_size + "/" + image_set['file']
+        else:
+            image_set["image_url"] = self.image_base_url + "/" + image_set['listings'] + "/" + image_set['file']
 
         market_availabilities = pd.DataFrame(get_availability_info(self.all_ids, [self.calendar_date], self.merlinHunter["scrapy_quibble"]["scrapy_availability"]))
 

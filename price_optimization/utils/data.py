@@ -146,7 +146,7 @@ def get_availability_info(listing_ids: list[str], calendar_date: list[str], avai
             "$gte": start_of_day,
             "$lt": end_of_day
         },
-        "available": True
+        "price": {'$exists': True, '$ne': [None, 0]}
     }
 
     availability_query = [

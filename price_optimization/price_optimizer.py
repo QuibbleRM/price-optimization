@@ -48,7 +48,7 @@ class PriceOptimizer:
         current_dir = os.path.dirname(__file__)
         csv_file_path = os.path.join(current_dir, 'files', 'bookable_search.csv')
         self.mc_factor = pd.read_csv(csv_file_path)
-        self.image_base_url = "http://qrm-listing-images.s3-website-us-east-1.amazonaws.com/airbnb" if self.image_size else "https://qrm-listing-images.s3.amazonaws.com/airbnb"
+        self.image_base_url = "https://d2zinnalk14bc6.cloudfront.net/airbnb" if self.image_size else "https://qrm-listing-images.s3.amazonaws.com/airbnb"
 
     def _setup_database_connections(self) -> None:
         self.revOS = MongoClient(os.getenv('MONGO_REVENUE_OS_URI'), socketTimeoutMS=1800000, connectTimeoutMS=1800000)

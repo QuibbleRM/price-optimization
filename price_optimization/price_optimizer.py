@@ -158,6 +158,9 @@ class PriceOptimizer:
             if value is not None:
                 market_listing_data.loc[0, key] = value
 
+        if pd.notna(market_listing_data.loc[0, 'adjusted']) and isinstance(market_listing_data.loc[0, 'adjusted'], (int, float)):
+            market_listing_data.loc[0, 'adjusted'] = f'{market_listing_data.loc[0, "adjusted"]:.2f}'
+
         to_optimize = (market_listing_data['to_optimize'] == 1).any()
         num_comp = market_listing_data.shape[0]
 
